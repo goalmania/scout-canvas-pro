@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Database — DM Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<script src="/js/data.js"></script>
+<script src="/js/storage.js"></script>
+<script src="/js/util.js"></script>
+<script src="/js/nav.js"></script>
+<script>Storage.requireAuth(); UI.renderNav({scout:true});</script>
+
+<section style="padding-top:5rem">
+  <div class="container">
+    <div class="label"><span class="dot"></span> // DATABASE GIOCATORI</div>
+    <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:1rem;margin-top:.6rem">
+      <h1>Database<span class="accent">.</span></h1>
+      <a href="/add-report.html" class="btn btn-primary">+ Nuovo Report</a>
+    </div>
+
+    <div class="filter-bar" style="margin-top:2rem">
+      <div class="field"><label>Cerca</label><input type="text" id="fSearch" placeholder="Nome, club, lega..."></div>
+      <div class="field"><label>Posizione</label><select id="fPos"><option value="">Tutte</option></select></div>
+      <div class="field"><label>Verdetto</label><select id="fVerdict"><option value="">Tutti</option><option value="buy">BUY</option><option value="monitor">MONITOR</option><option value="pass">PASS</option></select></div>
+      <div class="field"><label>Regione</label><select id="fRegion"><option value="">Tutte</option></select></div>
+      <div class="field"><label>Ordina per</label><select id="fSort">
+        <option value="date">Data ↓</option><option value="overall">Overall ↓</option><option value="age">Età ↑</option><option value="name">Nome A-Z</option>
+      </select></div>
+    </div>
+
+    <div id="count" class="mono" style="color:var(--gray);font-size:.8rem;letter-spacing:2px;margin-bottom:1rem"></div>
+    <div class="table-wrap">
+      <table id="tbl">
+        <thead><tr><th>#</th><th>Nome</th><th>Età</th><th>Club</th><th>Pos</th><th>Regione</th><th>Overall</th><th>Verdetto</th><th>Tags</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+const players = Storage.getPlayers();
+const positions = [...new Set(players.map(p=>p.position_main))].sort();
+const regions = [...new Set(players.map(p=>p.region).filter(Boolean))].sort();
+document.getElementById("fPos").innerHTML += positions.map(p=>`<option>${p}</option>`).join("");
+document.getElementById("fRegion").innerHTML += regions.map(r=>`<option>${r}</option>`).join("");
+
+function render(){
+  const s = document.getElementById("fSearch").value.toLowerCase();
+  const pos = document.getElementById("fPos").value;
+  const v = document.getElementById("fVerdict").value;
+  const r = document.getElementById("fRegion").value;
+  const sort = document.getElementById("fSort").value;
+  let arr = players.filter(p=>{
+    if(s && !(p.name+p.club+p.league).toLowerCase().includes(s)) return false;
+    if(pos && p.position_main!==pos) return false;
+    if(v && p.verdict_type!==v) return false;
+    if(r && p.region!==r) return false;
+    return true;
+  });
+  arr.sort((a,b)=>{
+    if(sort==="overall") return b.ratings.overall-a.ratings.overall;
+    if(sort==="age") return a.age-b.age;
+    if(sort==="name") return a.name.localeCompare(b.name);
+    return (b.date||"").localeCompare(a.date||"");
+  });
+  document.getElementById("count").textContent = arr.length+" GIOCATORI";
+  document.querySelector("#tbl tbody").innerHTML = arr.map(p=>`
+    <tr onclick="location.href='/player.html?id=${p.id}'">
+      <td class="mono" style="color:var(--gray)">#${p.num}</td>
+      <td><strong>${U.escapeHtml(p.name)}</strong> <span style="color:var(--gray);font-size:.85rem">${p.flag||""}</span></td>
+      <td>${p.age}</td>
+      <td>${U.escapeHtml(p.club)}<div style="color:var(--gray);font-size:.78rem">${U.escapeHtml(p.league||"")}</div></td>
+      <td><span class="chip">${U.escapeHtml(p.position_main)}</span></td>
+      <td>${U.escapeHtml(p.region||"")}</td>
+      <td><span class="chip chip-accent">${p.ratings.overall.toFixed(1)}</span></td>
+      <td>${U.verdictBadge(p.verdict_type)}</td>
+      <td>${(p.tags||[]).slice(0,2).map(t=>`<span class="chip ${U.tagClass(t)}" style="font-size:.6rem">${t}</span>`).join(" ")}</td>
+    </tr>`).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:3rem">Nessun risultato</td></tr>`;
+}
+["fSearch","fPos","fVerdict","fRegion","fSort"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+render();
+</script>
+</body>
+</html>
