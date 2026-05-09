@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nuovo Report — DM Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<script src="/js/data.js"></script><script src="/js/storage.js"></script>
+<script src="/js/util.js"></script><script src="/js/nav.js"></script>
+<script>Storage.requireAuth(); UI.renderNav({scout:true});</script>
+
+<section style="padding-top:5rem"><div class="container" style="max-width:900px">
+  <div class="label"><span class="dot"></span> // <span id="modeLabel">NUOVO REPORT GIOCATORE</span></div>
+  <h1 id="pageTitle" style="margin-top:.6rem">Nuovo Report<span class="accent">.</span></h1>
+  <p style="color:var(--gray);margin-top:.5rem">Compila tutti i campi per generare la scheda completa.</p>
+
+  <div id="form" style="margin-top:2rem"></div>
+
+  <div style="display:flex;gap:.7rem;margin-top:2rem;flex-wrap:wrap">
+    <button class="btn btn-primary" style="flex:1;min-width:200px" onclick="save()">Salva Report →</button>
+    <button id="delBtn" class="btn btn-danger hidden" onclick="del()">Elimina</button>
+    <a href="/database.html" class="btn btn-outline">Annulla</a>
+  </div>
+  <div style="text-align:center;margin-top:1.5rem"><a href="/ai-report.html" style="color:var(--gray);font-size:.9rem">⚡ Preferisci descrivere il giocatore? Usa il Generatore AI →</a></div>
+</div></section>
+
+<script>
+const params = new URLSearchParams(location.search);
+const editId = params.get("id");
+const isEdit = !!editId;
+let player = isEdit ? Storage.getPlayer(editId) : null;
+// AI sessionStorage prefill
+const aiPrefill = sessionStorage.getItem("dmscout_ai_prefill");
+if(!isEdit && aiPrefill){ try{ player = JSON.parse(aiPrefill); }catch(e){} sessionStorage.removeItem("dmscout_ai_prefill"); }
+if(isEdit && !player){ alert("Giocatore non trovato"); location.href="/database.html"; }
+if(isEdit){ document.getElementById("pageTitle").innerHTML = "Modifica · "+U.escapeHtml(player.name)+'<span class="accent">.</span>'; document.getElementById("modeLabel").textContent="MODIFICA REPORT"; document.getElementById("delBtn").classList.remove("hidden"); }
+
+const P = player || {
+  name:"",photo:"",age:20,birth_year:2005,nationality:"Italia",flag:"🇮🇹",club:"",league:"",region:"Puglia",lat:41.12,lng:16.87,
+  position_main:"Mezzala",position_code:"CM",position_secondary:[],foot:"Destro",height:180,weight:75,
+  tactical_roles:[{formation:"4-3-3",role:"Mezzala Offensiva",role_code:"CM_MEZZALA_OFF",fit_score:75}],
+  ratings:{technical:7,tactical:7,physical:7,mental:7,overall:7},
+  skills:{ball_control:65,passing:65,dribbling:60,finishing:55,defensive_work:60,tactical_iq:65,decision_making:65,aerial:55,pace:65,stamina:70},
+  stars:{technique:3,athleticism:3,mentality:3,potential:3,market_value:3},
+  market:{value_min:50000,value_max:120000,potential:"Medio",risk:"Medio",timeline:"12-18 mesi",ready_level:"Serie C"},
+  tags:[],verdict_type:"monitor",verdict:"",observation_type:"Video",observation_count:1,
+  date:new Date().toISOString().slice(0,10),strengths:[],weaknesses:[],summary:"",video_url:"",raw_report:""
+};
+
+const skillKeys = {ball_control:"Ball Control",passing:"Passaggio",dribbling:"Dribbling",finishing:"Finalizzazione",defensive_work:"Lavoro Difensivo",tactical_iq:"Intelligenza Tattica",decision_making:"Decision Making",aerial:"Gioco Aereo",pace:"Velocità",stamina:"Resistenza"};
+const ratKeys = {technical:"Tecnica",tactical:"Tattica",physical:"Fisico",mental:"Mentalità"};
+const starKeys = {technique:"Tecnica",athleticism:"Atletismo",mentality:"Mentalità",potential:"Potenziale",market_value:"Valore Mercato"};
+
+function build(){
+  const f = document.getElementById("form");
+  f.innerHTML = `
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">A · Anagrafica</h3>
+      <div class="row row-2">
+        <div class="field"><label>Nome e Cognome*</label><input id="i_name" type="text" value="${U.escapeHtml(P.name)}"></div>
+        <div class="field"><label>Club</label><input id="i_club" type="text" value="${U.escapeHtml(P.club)}"></div>
+        <div class="field"><label>Lega</label><input id="i_league" type="text" value="${U.escapeHtml(P.league)}"></div>
+        <div class="field"><label>Regione</label><select id="i_region">${U.REGIONS.map(r=>`<option ${r===P.region?'selected':''}>${r}</option>`).join("")}</select></div>
+        <div class="field"><label>Anno Nascita</label><input id="i_birth" type="number" min="1995" max="2012" value="${P.birth_year}"></div>
+        <div class="field"><label>Nazionalità</label><input id="i_nat" type="text" value="${U.escapeHtml(P.nationality)}"></div>
+        <div class="field"><label>Bandiera</label><input id="i_flag" type="text" value="${U.escapeHtml(P.flag||'')}"></div>
+        <div class="field"><label>Piede</label><select id="i_foot">${["Destro","Sinistro","Entrambi"].map(x=>`<option ${x===P.foot?'selected':''}>${x}</option>`).join("")}</select></div>
+        <div class="field"><label>Altezza (cm)</label><input id="i_h" type="number" value="${P.height||180}"></div>
+        <div class="field"><label>Peso (kg)</label><input id="i_w" type="number" value="${P.weight||75}"></div>
+        <div class="field"><label>Lat</label><input id="i_lat" type="number" step="0.001" value="${P.lat||41.12}"></div>
+        <div class="field"><label>Lng</label><input id="i_lng" type="number" step="0.001" value="${P.lng||16.87}"></div>
+      </div>
+      <div class="field"><label>Foto</label><input id="i_photo" type="file" accept="image/*"><div id="photoPrev" style="margin-top:.5rem">${P.photo?`<img src="${P.photo}" class="photo-circle">`:''}</div></div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">B · Posizione & Ruoli Tattici</h3>
+      <div class="row row-2">
+        <div class="field"><label>Posizione Principale</label><select id="i_pos">${Object.values(U.POS_LABELS).map(p=>`<option ${p===P.position_main?'selected':''}>${p}</option>`).join("")}</select></div>
+        <div class="field"><label>Code</label><input id="i_pcode" type="text" value="${P.position_code}" readonly></div>
+      </div>
+      <div class="field"><label>Posizioni Secondarie (separate da virgola)</label><input id="i_psec" type="text" value="${(P.position_secondary||[]).join(', ')}"></div>
+      <div style="margin-top:1rem"><div class="label" style="margin-bottom:.5rem">// Ruoli per Modulo</div><div id="roleList"></div>
+        <button class="btn btn-outline btn-sm" onclick="addRole()">+ Aggiungi Ruolo</button></div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">C · Valutazioni (0-10)</h3>
+      ${Object.keys(ratKeys).map(k=>`<div class="bar-row"><span class="lab">${ratKeys[k]}</span><input type="range" min="0" max="10" step="0.1" value="${P.ratings[k]}" id="r_${k}" oninput="updRat()"><span class="val" id="rv_${k}">${P.ratings[k].toFixed(1)}</span></div>`).join("")}
+      <div class="bar-row" style="margin-top:.7rem;border-top:0.5px solid var(--border);padding-top:.7rem"><span class="lab" style="color:var(--accent)">OVERALL</span><div class="bar"><div class="bar-fill" id="ovBar" style="width:${P.ratings.overall*10}%"></div></div><span class="val" id="ovVal" style="color:var(--accent);font-weight:700">${P.ratings.overall.toFixed(1)}</span></div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">D · Skills (0-100)</h3>
+      ${Object.keys(skillKeys).map(k=>`<div class="bar-row"><span class="lab">${skillKeys[k]}</span><input type="range" min="0" max="100" value="${P.skills[k]}" id="s_${k}" oninput="document.getElementById('sv_${k}').textContent=this.value"><span class="val" id="sv_${k}">${P.skills[k]}</span></div>`).join("")}
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">E · Stelle</h3>
+      <div class="row row-3">${Object.keys(starKeys).map(k=>`<div><div class="label" style="margin-bottom:.3rem">${starKeys[k]}</div><div id="st_${k}">${U.starsRow(P.stars[k],'window.setStar_'+k)}</div></div>`).join("")}</div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">F · Mercato</h3>
+      <div class="row row-3">
+        <div class="field"><label>Valore Min €</label><input id="m_min" type="number" value="${P.market.value_min}"></div>
+        <div class="field"><label>Valore Max €</label><input id="m_max" type="number" value="${P.market.value_max}"></div>
+        <div class="field"><label>Potenziale</label><select id="m_pot">${["Alto","Medio-Alto","Medio","Basso"].map(x=>`<option ${x===P.market.potential?'selected':''}>${x}</option>`).join("")}</select></div>
+        <div class="field"><label>Rischio</label><select id="m_risk">${["Basso","Medio","Alto"].map(x=>`<option ${x===P.market.risk?'selected':''}>${x}</option>`).join("")}</select></div>
+        <div class="field"><label>Timeline</label><input id="m_time" type="text" value="${U.escapeHtml(P.market.timeline)}"></div>
+        <div class="field"><label>Pronto per</label><input id="m_ready" type="text" value="${U.escapeHtml(P.market.ready_level)}"></div>
+      </div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">G · Tags</h3>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        ${U.TAGS.map(t=>`<label class="chip ${(P.tags||[]).includes(t)?U.tagClass(t):''}" style="cursor:pointer"><input type="checkbox" class="tagCb" value="${t}" ${(P.tags||[]).includes(t)?'checked':''} style="margin-right:.4rem">${t}</label>`).join("")}
+      </div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">H · Verdetto</h3>
+      <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+        ${["buy","monitor","pass"].map(v=>`<button class="verdict-pill ${v} ${P.verdict_type===v?'active':''}" data-v="${v}" onclick="setVerdict('${v}')">${v.toUpperCase()}</button>`).join("")}
+      </div>
+      <div class="field"><label>Testo Verdetto</label><textarea id="v_txt" rows="4">${U.escapeHtml(P.verdict)}</textarea></div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1rem">
+      <h3 style="margin-bottom:1rem">I · Analisi</h3>
+      <div class="field"><label>Summary</label><textarea id="i_sum" rows="5">${U.escapeHtml(P.summary)}</textarea></div>
+      <div class="field"><label>Punti di Forza (uno per riga)</label><textarea id="i_str" rows="4">${(P.strengths||[]).join('\n')}</textarea></div>
+      <div class="field"><label>Aree di Miglioramento (uno per riga)</label><textarea id="i_wk" rows="4">${(P.weaknesses||[]).join('\n')}</textarea></div>
+      <div class="row row-3">
+        <div class="field"><label>Tipo Osservazione</label><select id="i_otype">${["Video","Dal vivo","Video + Dal vivo"].map(x=>`<option ${x===P.observation_type?'selected':''}>${x}</option>`).join("")}</select></div>
+        <div class="field"><label>N° Osservazioni</label><input id="i_ocount" type="number" value="${P.observation_count}"></div>
+        <div class="field"><label>Data</label><input id="i_date" type="date" value="${P.date}"></div>
+      </div>
+      <div class="field"><label>URL Video YouTube</label><input id="i_video" type="url" value="${U.escapeHtml(P.video_url||'')}"></div>
+    </div>
+  `;
+  renderRoles();
+  Object.keys(starKeys).forEach(k=>{
+    window["setStar_"+k] = i => { P.stars[k]=i; document.getElementById("st_"+k).innerHTML = U.starsRow(i,'window.setStar_'+k); };
+  });
+  document.getElementById("i_pos").onchange = e => {
+    const code = U.POS_TO_CODE[e.target.value]||"CM";
+    P.position_code = code;
+    document.getElementById("i_pcode").value = code;
+  };
+  document.getElementById("i_photo").onchange = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const r = new FileReader();
+    r.onload = ev => { P.photo = ev.target.result; document.getElementById("photoPrev").innerHTML = `<img src="${P.photo}" class="photo-circle">`; };
+    r.readAsDataURL(file);
+  };
+}
+function renderRoles(){
+  const list = document.getElementById("roleList");
+  list.innerHTML = (P.tactical_roles||[]).map((r,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 1.5fr 1fr auto;gap:.5rem;margin-bottom:.5rem;align-items:end">
+      <div class="field" style="margin:0"><label>Modulo</label><select onchange="P.tactical_roles[${i}].formation=this.value">${U.FORMATIONS.map(f=>`<option ${f===r.formation?'selected':''}>${f}</option>`).join("")}</select></div>
+      <div class="field" style="margin:0"><label>Ruolo</label><input type="text" value="${U.escapeHtml(r.role)}" oninput="P.tactical_roles[${i}].role=this.value"></div>
+      <div class="field" style="margin:0"><label>Fit %</label><input type="number" min="0" max="100" value="${r.fit_score}" oninput="P.tactical_roles[${i}].fit_score=parseInt(this.value)||0"></div>
+      <button class="btn btn-outline btn-sm" onclick="P.tactical_roles.splice(${i},1);renderRoles()">×</button>
+    </div>`).join("");
+}
+function addRole(){ if((P.tactical_roles||[]).length>=4) return; P.tactical_roles.push({formation:"4-3-3",role:"",role_code:"",fit_score:70}); renderRoles(); }
+function updRat(){
+  const t=parseFloat(document.getElementById("r_technical").value);
+  const ta=parseFloat(document.getElementById("r_tactical").value);
+  const p=parseFloat(document.getElementById("r_physical").value);
+  const m=parseFloat(document.getElementById("r_mental").value);
+  ["technical","tactical","physical","mental"].forEach(k=>document.getElementById("rv_"+k).textContent=parseFloat(document.getElementById("r_"+k).value).toFixed(1));
+  const ov = (t*0.25+ta*0.30+p*0.20+m*0.25);
+  document.getElementById("ovVal").textContent=ov.toFixed(1);
+  document.getElementById("ovBar").style.width=(ov*10)+"%";
+  P.ratings={technical:t,tactical:ta,physical:p,mental:m,overall:Math.round(ov*10)/10};
+}
+function setVerdict(v){ P.verdict_type=v; document.querySelectorAll(".verdict-pill").forEach(b=>b.classList.toggle("active",b.dataset.v===v)); }
+function save(){
+  const name=document.getElementById("i_name").value.trim();
+  if(!name){ alert("Nome richiesto"); return; }
+  P.name=name;
+  P.club=document.getElementById("i_club").value;
+  P.league=document.getElementById("i_league").value;
+  P.region=document.getElementById("i_region").value;
+  P.birth_year=parseInt(document.getElementById("i_birth").value);
+  P.age=new Date().getFullYear()-P.birth_year;
+  P.nationality=document.getElementById("i_nat").value;
+  P.flag=document.getElementById("i_flag").value;
+  P.foot=document.getElementById("i_foot").value;
+  P.height=parseInt(document.getElementById("i_h").value);
+  P.weight=parseInt(document.getElementById("i_w").value);
+  P.lat=parseFloat(document.getElementById("i_lat").value);
+  P.lng=parseFloat(document.getElementById("i_lng").value);
+  P.position_main=document.getElementById("i_pos").value;
+  P.position_code=U.POS_TO_CODE[P.position_main]||"CM";
+  P.position_secondary=document.getElementById("i_psec").value.split(",").map(s=>s.trim()).filter(Boolean);
+  updRat();
+  Object.keys(skillKeys).forEach(k=>P.skills[k]=parseInt(document.getElementById("s_"+k).value));
+  P.market={value_min:parseInt(document.getElementById("m_min").value)||0,value_max:parseInt(document.getElementById("m_max").value)||0,potential:document.getElementById("m_pot").value,risk:document.getElementById("m_risk").value,timeline:document.getElementById("m_time").value,ready_level:document.getElementById("m_ready").value};
+  P.tags=[...document.querySelectorAll(".tagCb:checked")].map(c=>c.value);
+  P.verdict=document.getElementById("v_txt").value;
+  P.summary=document.getElementById("i_sum").value;
+  P.strengths=document.getElementById("i_str").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  P.weaknesses=document.getElementById("i_wk").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  P.observation_type=document.getElementById("i_otype").value;
+  P.observation_count=parseInt(document.getElementById("i_ocount").value)||0;
+  P.date=document.getElementById("i_date").value;
+  P.video_url=document.getElementById("i_video").value;
+  if(!P.id) P.id = Storage.generateId(P.name);
+  Storage.savePlayer(P);
+  location.href="/player.html?id="+P.id;
+}
+function del(){
+  if(!confirm("Sei sicuro? Questa azione è irreversibile.")) return;
+  Storage.deletePlayer(P.id); location.href="/database.html";
+}
+build();
+</script>
+</body></html>

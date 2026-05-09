@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mappa — DM Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+<style>
+.world-map{background:#0f1f0f;border:0.5px solid var(--border);border-radius:var(--radius);width:100%;height:auto}
+.region-list{max-height:520px;overflow-y:auto}
+.dot-pin{cursor:pointer;transition:.15s}
+.dot-pin:hover{r:11}
+.tooltip{position:fixed;background:var(--gray-light);border:0.5px solid var(--accent);padding:.6rem .9rem;border-radius:6px;pointer-events:none;font-size:.85rem;z-index:50;display:none}
+</style>
+</head>
+<body>
+<script src="/js/data.js"></script><script src="/js/storage.js"></script>
+<script src="/js/util.js"></script><script src="/js/nav.js"></script>
+<script>Storage.requireAuth(); UI.renderNav({scout:true});</script>
+
+<section style="padding-top:5rem"><div class="container">
+  <div class="label"><span class="dot"></span> // MAPPA GIOCATORI</div>
+  <h1 style="margin-top:.6rem">Mappa<span class="accent">.</span></h1>
+  <div id="stats" class="mono" style="color:var(--gray);font-size:.85rem;letter-spacing:2px;margin-top:.8rem"></div>
+
+  <div style="display:flex;gap:.5rem;margin-top:1.5rem;flex-wrap:wrap">
+    <button class="btn btn-outline" id="bWorld">🌍 Mondiale</button>
+    <button class="btn btn-outline" id="bIta">🇮🇹 Regioni Italia</button>
+    <select id="fVerd" class="btn btn-outline" style="padding:.6rem 1rem">
+      <option value="">Tutti i verdetti</option><option value="buy">BUY</option><option value="monitor">MONITOR</option><option value="pass">PASS</option>
+    </select>
+  </div>
+
+  <div id="mapWrap" style="margin-top:1.5rem"></div>
+</div></section>
+
+<div class="tooltip" id="tt"></div>
+
+<script>
+const all = Storage.getPlayers();
+let view = "world";
+const stats = document.getElementById("stats");
+stats.textContent = `${all.length} GIOCATORI · ${new Set(all.map(p=>p.region)).size} REGIONI · ${new Set(all.map(p=>p.league)).size} CAMPIONATI`;
+
+document.getElementById("bWorld").onclick=()=>{view="world";render();};
+document.getElementById("bIta").onclick=()=>{view="ita";render();};
+document.getElementById("fVerd").onchange=render;
+
+const tt = document.getElementById("tt");
+function showTip(e,html){ tt.innerHTML=html; tt.style.display="block"; tt.style.left=(e.clientX+12)+"px"; tt.style.top=(e.clientY+12)+"px"; }
+function hideTip(){ tt.style.display="none"; }
+
+const REGION_COORDS = {
+  "Puglia":[41.0,16.5],"Campania":[40.85,14.27],"Basilicata":[40.64,15.81],"Calabria":[39.0,16.5],
+  "Sicilia":[37.6,14.0],"Sardegna":[40.1,9.1],"Lazio":[41.9,12.5],"Lombardia":[45.5,9.2],
+  "Veneto":[45.4,11.9],"Toscana":[43.7,11.2],"Emilia-Romagna":[44.5,11.3],"Piemonte":[45.07,7.69],
+  "Liguria":[44.4,8.95],"Marche":[43.6,13.5],"Abruzzo":[42.35,13.4],"Molise":[41.55,14.65],
+  "Umbria":[43.1,12.4],"Friuli-Venezia Giulia":[46.0,13.2],"Trentino-Alto Adige":[46.5,11.35],"Valle d'Aosta":[45.7,7.32]
+};
+
+function render(){
+  const v = document.getElementById("fVerd").value;
+  const arr = all.filter(p=>!v||p.verdict_type===v);
+  if(view==="world") renderWorld(arr);
+  else renderIta(arr);
+}
+
+function project(lat,lng){
+  // simple equirectangular
+  const W=1000,H=500;
+  const x = (lng+180)/360 * W;
+  const y = (90-lat)/180 * H;
+  return [x,y];
+}
+
+function renderWorld(arr){
+  const W=1000,H=500;
+  let pins = arr.map(p=>{
+    const [x,y]=project(p.lat||0,p.lng||0);
+    const col = p.verdict_type==="buy"?"#c8f000":p.verdict_type==="monitor"?"#ff8c00":"#888";
+    return `<circle class="dot-pin" cx="${x}" cy="${y}" r="7" fill="${col}" stroke="#000" stroke-width="1" data-id="${p.id}" data-name="${U.escapeHtml(p.name)}" data-club="${U.escapeHtml(p.club)}" data-ov="${p.ratings.overall.toFixed(1)}" data-v="${p.verdict_type}"/>`;
+  }).join("");
+  document.getElementById("mapWrap").innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" class="world-map">
+    <rect width="${W}" height="${H}" fill="#0f1f0f"/>
+    <!-- Simplified continents (very rough rectangles) -->
+    <g fill="#1a2e1a" stroke="rgba(255,255,255,0.08)" stroke-width="1">
+      <path d="M460,90 L560,80 L600,140 L580,210 L500,250 L450,230 L420,170 Z"/>  <!-- Europe -->
+      <path d="M520,260 L640,250 L680,340 L620,420 L530,440 L490,380 Z"/>  <!-- Africa -->
+      <path d="M620,90 L850,90 L880,200 L800,280 L700,260 L640,200 Z"/>  <!-- Asia -->
+      <path d="M820,300 L920,310 L900,380 L830,370 Z"/>  <!-- Oceania -->
+      <path d="M150,80 L320,90 L320,210 L250,260 L150,220 Z"/>  <!-- North America -->
+      <path d="M260,290 L360,300 L350,440 L280,460 L240,380 Z"/>  <!-- South America -->
+    </g>
+    ${pins}
+  </svg>
+  <div style="display:flex;gap:1rem;margin-top:1rem;font-size:.8rem">
+    <span><span style="display:inline-block;width:10px;height:10px;background:#c8f000;border-radius:50%"></span> BUY</span>
+    <span><span style="display:inline-block;width:10px;height:10px;background:#ff8c00;border-radius:50%"></span> MONITOR</span>
+    <span><span style="display:inline-block;width:10px;height:10px;background:#888;border-radius:50%"></span> PASS</span>
+  </div>`;
+  document.querySelectorAll(".dot-pin").forEach(c=>{
+    c.addEventListener("mouseenter",e=>showTip(e,`<strong>${c.dataset.name}</strong><br>${c.dataset.club} · ★${c.dataset.ov}<br><span class="chip ${c.dataset.v==='buy'?'chip-accent':c.dataset.v==='monitor'?'chip-orange':'chip-red'}">${c.dataset.v.toUpperCase()}</span>`));
+    c.addEventListener("mousemove",e=>showTip(e,tt.innerHTML));
+    c.addEventListener("mouseleave",hideTip);
+    c.addEventListener("click",()=>location.href="/player.html?id="+c.dataset.id);
+  });
+}
+
+function renderIta(arr){
+  const counts = {};
+  arr.forEach(p=>{ if(p.region) counts[p.region]=(counts[p.region]||0)+1; });
+  const regBlocks = Object.keys(REGION_COORDS).map(r=>{
+    const [lat,lng] = REGION_COORDS[r];
+    // map to viewBox approximating Italy
+    const x = (lng-6)*60;
+    const y = (47.5-lat)*70;
+    const c = counts[r]||0;
+    return `<g class="reg" data-region="${r}" style="cursor:${c?'pointer':'default'}">
+      <circle cx="${x}" cy="${y}" r="${c?14+c*2:8}" fill="${c?'rgba(200,240,0,0.3)':'#1a1a1a'}" stroke="${c?'#c8f000':'rgba(255,255,255,0.1)'}" stroke-width="1.5"/>
+      <text x="${x}" y="${y+4}" text-anchor="middle" fill="${c?'#c8f000':'#555'}" font-family="Space Mono" font-size="11" font-weight="700">${c||''}</text>
+      <text x="${x}" y="${y+30}" text-anchor="middle" fill="#888" font-family="Space Mono" font-size="9">${r.length>10?r.slice(0,10)+'…':r}</text>
+    </g>`;
+  }).join("");
+
+  document.getElementById("mapWrap").innerHTML = `
+  <div class="row row-2" style="align-items:start">
+    <div class="card-flat">
+      <svg viewBox="0 0 700 600" class="world-map" style="background:#0f1f0f">
+        ${regBlocks}
+      </svg>
+      <div style="margin-top:.8rem"><button class="btn btn-outline btn-sm" onclick="filterReg('')">Tutte le regioni</button></div>
+    </div>
+    <div class="card-flat region-list" id="regList"></div>
+  </div>`;
+  filterReg("");
+  document.querySelectorAll(".reg").forEach(g=>{
+    g.onclick = ()=> filterReg(g.dataset.region);
+  });
+}
+
+function filterReg(r){
+  const v = document.getElementById("fVerd").value;
+  const arr = all.filter(p=>(!v||p.verdict_type===v) && (!r||p.region===r));
+  const list = document.getElementById("regList");
+  if(!list) return;
+  list.innerHTML = `<div class="label" style="margin-bottom:1rem">// ${r||'TUTTE LE REGIONI'} · ${arr.length}</div>` +
+    (arr.length?arr.map(p=>`
+      <a href="/player.html?id=${p.id}" style="display:block;padding:.8rem 0;border-bottom:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${U.escapeHtml(p.name)}</strong><div style="color:var(--gray);font-size:.82rem">${U.escapeHtml(p.club)} · ${U.escapeHtml(p.position_main)}</div></div>
+          <div style="display:flex;gap:.4rem;align-items:center">${U.verdictBadge(p.verdict_type)}<span class="chip chip-accent">${p.ratings.overall.toFixed(1)}</span></div>
+        </div>
+      </a>`).join(""):'<div style="color:var(--gray);text-align:center;padding:2rem">Nessun giocatore</div>');
+}
+
+render();
+</script>
+</body></html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Compare — DM Scout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<script src="/js/data.js"></script><script src="/js/storage.js"></script>
+<script src="/js/util.js"></script><script src="/js/nav.js"></script>
+<script>Storage.requireAuth(); UI.renderNav({scout:true});</script>
+
+<section style="padding-top:5rem"><div class="container">
+  <div class="label"><span class="dot"></span> // COMPARATORE</div>
+  <h1 style="margin-top:.6rem">Compare<span class="accent">.</span></h1>
+
+  <div class="row row-2" style="margin-top:2rem">
+    <div class="field"><label>Player A</label><select id="selA"></select></div>
+    <div class="field"><label>Player B</label><select id="selB"></select></div>
+  </div>
+
+  <div id="cmpBody" style="margin-top:2rem"></div>
+</div></section>
+
+<script>
+const all = Storage.getPlayers();
+const opts = all.map(p=>`<option value="${p.id}">${U.escapeHtml(p.name)} — ${U.escapeHtml(p.club)}</option>`).join("");
+document.getElementById("selA").innerHTML = opts;
+document.getElementById("selB").innerHTML = opts;
+const pre = localStorage.getItem("dmscout_compare_id");
+if(pre) document.getElementById("selA").value = pre;
+if(all[1]) document.getElementById("selB").value = pre===all[0]?.id ? all[1].id : all[0].id;
+document.getElementById("selA").onchange = render;
+document.getElementById("selB").onchange = render;
+render();
+
+function bestOf(a,b){ return a>b?"A":(b>a?"B":""); }
+function row(label,a,b,fmt){
+  const w = bestOf(parseFloat(a)||0, parseFloat(b)||0);
+  const f = fmt || (x=>x);
+  return `<tr>
+    <td style="${w==='A'?'background:var(--accent-dim);color:var(--accent);font-weight:700':''}">${f(a)}</td>
+    <td style="text-align:center;color:var(--gray);font-family:var(--font-mono);font-size:.78rem;letter-spacing:2px">${label}</td>
+    <td style="${w==='B'?'background:var(--accent2-dim);color:var(--accent2);font-weight:700':'';}text-align:right">${f(b)}</td>
+  </tr>`;
+}
+
+function render(){
+  const A = Storage.getPlayer(document.getElementById("selA").value);
+  const B = Storage.getPlayer(document.getElementById("selB").value);
+  if(!A||!B) return;
+  const skillKeys = {ball_control:"Ball Control",passing:"Passing",dribbling:"Dribbling",finishing:"Finishing",defensive_work:"Difensiva",tactical_iq:"Tactical IQ",decision_making:"Decision",aerial:"Aerial",pace:"Pace",stamina:"Stamina"};
+
+  document.getElementById("cmpBody").innerHTML = `
+    <div class="row row-2" style="margin-bottom:1.5rem">
+      <div class="card-flat" style="text-align:center;border-color:var(--accent)">
+        <h2 style="color:var(--accent)">${U.escapeHtml(A.name)}</h2>
+        <div style="color:var(--gray)">${U.escapeHtml(A.club)} · ${U.escapeHtml(A.position_main)}</div>
+      </div>
+      <div class="card-flat" style="text-align:center;border-color:var(--accent2)">
+        <h2 style="color:var(--accent2)">${U.escapeHtml(B.name)}</h2>
+        <div style="color:var(--gray)">${U.escapeHtml(B.club)} · ${U.escapeHtml(B.position_main)}</div>
+      </div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1.5rem;display:flex;justify-content:center">
+      <canvas id="dual" width="500" height="500" style="max-width:100%;height:auto"></canvas>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1.5rem">
+      <div class="label" style="margin-bottom:1rem">// VALUTAZIONI</div>
+      <div class="table-wrap"><table>
+        ${row("Tecnica",A.ratings.technical.toFixed(1),B.ratings.technical.toFixed(1))}
+        ${row("Tattica",A.ratings.tactical.toFixed(1),B.ratings.tactical.toFixed(1))}
+        ${row("Fisico",A.ratings.physical.toFixed(1),B.ratings.physical.toFixed(1))}
+        ${row("Mentalità",A.ratings.mental.toFixed(1),B.ratings.mental.toFixed(1))}
+        ${row("Overall",A.ratings.overall.toFixed(1),B.ratings.overall.toFixed(1))}
+        ${row("Valore Min €",A.market.value_min,B.market.value_min,U.fmtMoney)}
+        ${row("Valore Max €",A.market.value_max,B.market.value_max,U.fmtMoney)}
+      </table></div>
+    </div>
+
+    <div class="card-flat" style="margin-bottom:1.5rem">
+      <div class="label" style="margin-bottom:1rem">// SKILLS</div>
+      ${Object.keys(skillKeys).map(k=>`
+        <div style="margin-bottom:.7rem">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.3rem"><span style="color:var(--accent)">${A.skills[k]}</span><span style="color:var(--gray);font-family:var(--font-mono);letter-spacing:2px">${skillKeys[k]}</span><span style="color:var(--accent2)">${B.skills[k]}</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;height:8px;border-radius:999px;overflow:hidden">
+            <div style="background:var(--gray-mid);position:relative"><div style="position:absolute;right:0;top:0;height:100%;background:var(--accent);width:${A.skills[k]}%"></div></div>
+            <div style="background:var(--gray-mid);position:relative"><div style="height:100%;background:var(--accent2);width:${B.skills[k]}%"></div></div>
+          </div>
+        </div>`).join("")}
+    </div>
+
+    <div class="row row-2" style="margin-bottom:1.5rem">
+      <div class="verdict-box ${A.verdict_type}"><strong>${(A.verdict_type||'').toUpperCase()} · ${U.escapeHtml(A.name)}</strong><p style="margin-top:.5rem">${U.escapeHtml(A.verdict||"")}</p></div>
+      <div class="verdict-box ${B.verdict_type}"><strong>${(B.verdict_type||'').toUpperCase()} · ${U.escapeHtml(B.name)}</strong><p style="margin-top:.5rem">${U.escapeHtml(B.verdict||"")}</p></div>
+    </div>
+  `;
+
+  U.drawRadar(document.getElementById("dual"),{
+    labels:["Tecnica","Tattica","Fisico","Mentalità","Overall"],
+    datasets:[
+      {values:[A.ratings.technical,A.ratings.tactical,A.ratings.physical,A.ratings.mental,A.ratings.overall],fill:"rgba(200,240,0,0.15)",stroke:"#c8f000"},
+      {values:[B.ratings.technical,B.ratings.tactical,B.ratings.physical,B.ratings.mental,B.ratings.overall],fill:"rgba(0,200,160,0.15)",stroke:"#00c8a0"}
+    ]
+  },{max:10});
+}
+</script>
+</body></html>
