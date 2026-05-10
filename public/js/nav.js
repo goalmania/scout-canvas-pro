@@ -3,15 +3,14 @@
   const PUB_LINKS = [
     {href:"/portfolio.html", label:"Portfolio"},
     {href:"/services.html", label:"Servizi"},
-    {href:"/database.html", label:"Report"},
+    {href:"/database.html", label:"I Miei Report", accent:true},
+    {href:"/map.html", label:"Mappa"},
     {href:"/contact.html", label:"Contatti"},
-    {href:"/index.html", label:"Scout Area", accent:true},
   ];
   const SCOUT_LINKS = [
     {href:"/index.html", label:"Dashboard"},
     {href:"/database.html", label:"Database"},
-    {href:"/add-report.html", label:"Nuovo"},
-    {href:"/ai-report.html", label:"AI"},
+    {href:"/add-report.html", label:"Nuovo Report"},
     {href:"/compare.html", label:"Compare"},
     {href:"/map.html", label:"Mappa"},
     {href:"/portfolio.html", label:"← Portfolio"},
