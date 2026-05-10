@@ -3,6 +3,7 @@
   const PUB_LINKS = [
     {href:"/portfolio.html", label:"Portfolio"},
     {href:"/services.html", label:"Servizi"},
+    {href:"/database.html", label:"Report"},
     {href:"/contact.html", label:"Contatti"},
     {href:"/index.html", label:"Scout Area", accent:true},
   ];
