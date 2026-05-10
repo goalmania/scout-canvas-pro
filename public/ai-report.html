@@ -6,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/main.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 <script src="/js/data.js"></script><script src="/js/storage.js"></script>
@@ -15,39 +16,74 @@
 <section style="padding-top:5rem"><div class="container" style="max-width:900px">
   <div class="label"><span class="dot"></span> // GENERATORE REPORT AI</div>
   <h1 style="margin-top:.6rem">Generatore<br>AI<span class="accent">.</span></h1>
-  <p style="color:var(--gray);margin-top:.5rem">Scrivi liberamente le tue osservazioni. L'AI compilerà tutti i campi del report automaticamente.</p>
+  <p style="color:var(--gray);margin-top:.5rem">Scrivi le tue osservazioni o carica un file (TXT o PDF). L'AI compilerà <strong>tutte</strong> le sezioni del report (anagrafica, ruoli tattici, valutazioni, skills, stelle, mercato, tags, punti forza/deboli, verdetto) e lo pubblicherà sul sito.</p>
 
   <div class="card-flat" style="margin-top:2rem">
     <div class="field"><label>API Key Anthropic (sk-ant-...)</label>
       <input type="password" id="apiKey" placeholder="La tua API key (salvata solo nel browser)">
       <div style="font-size:.78rem;color:var(--gray);margin-top:.4rem">La key resta in localStorage di questo dispositivo. <a href="https://console.anthropic.com/" target="_blank" style="color:var(--accent)">Ottienila qui →</a></div>
     </div>
+
     <div class="row row-2">
-      <div class="field"><label>Nome Giocatore*</label><input id="aiName" type="text" placeholder="Es. Luca Mancini"></div>
-      <div class="field"><label>Club (opz.)</label><input id="aiClub" type="text" placeholder="Es. Bari U19"></div>
+      <div class="field"><label>Nome Giocatore (opzionale, l'AI può dedurlo)</label><input id="aiName" type="text" placeholder="Es. Luca Mancini"></div>
+      <div class="field"><label>Club (opzionale)</label><input id="aiClub" type="text" placeholder="Es. Bari U19"></div>
     </div>
-    <div class="field"><label>Osservazioni Libere*</label>
+
+    <div class="field"><label>Carica File (TXT o PDF)</label>
+      <input type="file" id="aiFile" accept=".txt,.pdf,application/pdf,text/plain">
+      <div id="fileInfo" style="font-size:.78rem;color:var(--gray);margin-top:.4rem">Nessun file caricato</div>
+    </div>
+
+    <div class="field"><label>Osservazioni Libere (oppure incolla qui il testo)</label>
       <textarea id="aiText" rows="10" placeholder="Esempio: 'Ho osservato Luca Mancini, centrocampista del Bari Under 19, classe 2006. Alto 178cm, piede destro. Mezzala offensiva, ottima visione di gioco. Fisicamente acerbo. Potenziale Serie C, valore 40-60 mila euro. Consiglio di monitorarlo.'"></textarea>
     </div>
-    <button id="genBtn" class="btn btn-primary btn-block" onclick="generate()">⚡ Genera Report</button>
+
+    <button id="genBtn" class="btn btn-primary btn-block" onclick="generate()">⚡ Genera & Pubblica Report</button>
     <div id="err" class="hidden" style="margin-top:1rem;padding:.8rem 1rem;border:0.5px solid var(--red);background:rgba(255,68,68,.08);border-radius:6px;color:var(--red)"></div>
+    <div id="status" class="hidden" style="margin-top:1rem;color:var(--accent);font-family:var(--font-mono);font-size:.85rem;letter-spacing:1px"></div>
   </div>
 
   <div id="preview" class="hidden card-flat" style="margin-top:1.5rem">
-    <div class="label" style="margin-bottom:1rem">// ANTEPRIMA</div>
+    <div class="label" style="margin-bottom:1rem">// ANTEPRIMA REPORT GENERATO</div>
     <div id="prevBody"></div>
     <div style="display:flex;gap:.7rem;margin-top:1.5rem;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="saveDirect()">✓ Salva come Report</button>
-      <button class="btn btn-outline" onclick="editFirst()">✏ Modifica prima di salvare</button>
+      <button class="btn btn-primary" onclick="saveDirect()">✓ Pubblica sul sito</button>
+      <button class="btn btn-outline" onclick="editFirst()">✏ Modifica prima di pubblicare</button>
     </div>
   </div>
 </div></section>
 
 <script>
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+
 let parsed = null;
 const apiInput = document.getElementById("apiKey");
 apiInput.value = localStorage.getItem("dmscout_api_key")||"";
 apiInput.onchange = ()=> localStorage.setItem("dmscout_api_key", apiInput.value);
+
+document.getElementById("aiFile").onchange = async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const info = document.getElementById("fileInfo");
+  info.textContent = "Lettura " + f.name + "...";
+  try{
+    let txt = "";
+    if(f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")){
+      const buf = await f.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      for(let i=1;i<=pdf.numPages;i++){
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        txt += tc.items.map(it=>it.str).join(" ") + "\n\n";
+      }
+    } else {
+      txt = await f.text();
+    }
+    document.getElementById("aiText").value = txt.trim();
+    info.innerHTML = `✓ <span style="color:var(--accent)">${f.name}</span> (${txt.length} caratteri estratti)`;
+  }catch(err){
+    info.innerHTML = `<span style="color:var(--red)">Errore lettura file: ${err.message}</span>`;
+  }
+};
 
 async function generate(){
   const key = apiInput.value.trim();
@@ -55,36 +91,94 @@ async function generate(){
   const club = document.getElementById("aiClub").value.trim();
   const text = document.getElementById("aiText").value.trim();
   const err = document.getElementById("err");
+  const status = document.getElementById("status");
   err.classList.add("hidden");
   if(!key){ err.textContent="Inserisci la tua API key Anthropic."; err.classList.remove("hidden"); return; }
-  if(!name||!text){ err.textContent="Nome e testo osservazioni richiesti."; err.classList.remove("hidden"); return; }
+  if(!text){ err.textContent="Carica un file o scrivi le osservazioni."; err.classList.remove("hidden"); return; }
 
   const btn = document.getElementById("genBtn");
-  btn.textContent="Analisi in corso..."; btn.disabled=true;
+  btn.textContent="Analisi AI in corso..."; btn.disabled=true;
+  status.textContent = "// L'AI sta compilando tutte le sezioni del report..."; status.classList.remove("hidden");
 
-  const sys = `Sei un assistente per scout calcistici. Analizza il testo e rispondi SOLO con JSON valido (nessun markdown). Schema: { name, age, birth_year, nationality, flag, club, league, region, position_main, position_code, position_secondary (array), foot, height, weight, tactical_roles (array di {formation, role, role_code, fit_score}), ratings: {technical, tactical, physical, mental, overall} (0-10), skills: {ball_control, passing, dribbling, finishing, defensive_work, tactical_iq, decision_making, aerial, pace, stamina} (0-100), stars: {technique, athleticism, mentality, potential, market_value} (1-5), market: {value_min, value_max, potential, risk, timeline, ready_level}, tags (array), verdict_type ('buy'|'monitor'|'pass'), verdict, observation_type, observation_count, date (oggi YYYY-MM-DD), strengths (array), weaknesses (array), summary, lat, lng }. Posizioni valide: "Portiere","Difensore Centrale","Terzino Sinistro","Terzino Destro","Mediano","Mezzala","Trequartista","Ala Sinistra","Ala Destra","Prima Punta","Seconda Punta". position_code: GK|CB|LB|RB|CDM|CM|CAM|LW|RW|ST|CF.`;
+  const today = new Date().toISOString().slice(0,10);
+  const sys = `Sei un assistente esperto per scout calcistici. Analizza il testo del rapporto di osservazione e RESTITUISCI ESCLUSIVAMENTE UN OGGETTO JSON VALIDO (nessun testo prima/dopo, nessun blocco markdown). Compila TUTTI i campi: se un dato non è esplicito, deduci un valore plausibile e coerente con il livello del giocatore descritto.
+
+SCHEMA OBBLIGATORIO (tutti i campi richiesti):
+{
+  "name": string,
+  "age": number,
+  "birth_year": number (= ${new Date().getFullYear()} - age),
+  "nationality": string (default "Italia"),
+  "flag": string emoji bandiera (default "🇮🇹"),
+  "club": string,
+  "league": string,
+  "region": string (una di: Abruzzo,Basilicata,Calabria,Campania,Emilia-Romagna,Friuli-Venezia Giulia,Lazio,Liguria,Lombardia,Marche,Molise,Piemonte,Puglia,Sardegna,Sicilia,Toscana,Trentino-Alto Adige,Umbria,Valle d'Aosta,Veneto,Estero),
+  "lat": number, "lng": number (coordinate del club, plausibili),
+  "position_main": string (una di: "Portiere","Difensore Centrale","Terzino Sinistro","Terzino Destro","Mediano","Mezzala","Trequartista","Ala Sinistra","Ala Destra","Prima Punta","Seconda Punta"),
+  "position_code": string (GK|CB|LB|RB|CDM|CM|CAM|LW|RW|ST|CF),
+  "position_secondary": array di stringhe (può essere vuoto),
+  "foot": "Destro"|"Sinistro"|"Entrambi",
+  "height": number cm,
+  "weight": number kg,
+  "tactical_roles": array di 2-3 oggetti {formation: "4-3-3"|"4-2-3-1"|"3-5-2"|"4-4-2"|"3-4-3"|"4-3-1-2", role: string descrittivo, role_code: string, fit_score: 0-100},
+  "ratings": {technical, tactical, physical, mental, overall} (tutti 0-10, decimali ammessi; overall = media pesata 0.25*technical+0.30*tactical+0.20*physical+0.25*mental),
+  "skills": {ball_control, passing, dribbling, finishing, defensive_work, tactical_iq, decision_making, aerial, pace, stamina} (tutti 0-100, interi),
+  "stars": {technique, athleticism, mentality, potential, market_value} (tutti 1-5 interi),
+  "market": {value_min: number EUR, value_max: number EUR, potential: "Alto"|"Medio-Alto"|"Medio"|"Basso", risk: "Basso"|"Medio"|"Alto", timeline: string es "12-18 mesi", ready_level: string es "Serie C"|"Serie B"|"Serie A"|"Primavera"},
+  "tags": array di stringhe scelte tra ["Talento","Prospetto","U19","U21","Nazionale","Sleeper","Veloce","Tecnico","Fisico","Leader","Bandiera","Mancino","Versatile","Esperienza"],
+  "verdict_type": "buy"|"monitor"|"pass",
+  "verdict": string (2-4 frasi motivate),
+  "observation_type": "Video"|"Dal vivo"|"Video + Dal vivo",
+  "observation_count": number >=1,
+  "date": "${today}",
+  "strengths": array di 3-6 stringhe brevi (punti di forza),
+  "weaknesses": array di 2-5 stringhe brevi (aree di miglioramento),
+  "summary": string (analisi tecnico-tattica di 4-8 frasi)
+}
+
+REGOLE:
+- Il JSON deve essere parsabile da JSON.parse senza modifiche.
+- Nessun campo nullo: usa stringhe vuote o array vuoti se proprio non disponibili.
+- Coerenza interna: se overall è 8, le skills devono riflettere un livello medio-alto.
+- Stile italiano professionale, lessico da scout.`;
 
   try{
     const res = await fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:sys,
-        messages:[{role:"user",content:`Nome: ${name}\nClub: ${club}\n\nOsservazioni:\n${text}`}]})
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:4000,system:sys,
+        messages:[{role:"user",content:`${name?'Nome (suggerito): '+name+'\n':''}${club?'Club (suggerito): '+club+'\n':''}\nTESTO OSSERVAZIONI / REPORT:\n${text}\n\nCompila il JSON completo.`}]})
     });
-    if(!res.ok){ throw new Error("API "+res.status); }
+    if(!res.ok){
+      const errText = await res.text();
+      throw new Error("API "+res.status+": "+errText.slice(0,200));
+    }
     const data = await res.json();
     let txt = data.content[0].text.trim();
-    txt = txt.replace(/^```json\s*/,"").replace(/```$/,"").trim();
+    txt = txt.replace(/^```json\s*/i,"").replace(/^```\s*/,"").replace(/```$/,"").trim();
+    // estrai primo blocco {...}
+    const start = txt.indexOf("{"); const end = txt.lastIndexOf("}");
+    if(start>=0 && end>start) txt = txt.slice(start, end+1);
     parsed = JSON.parse(txt);
     parsed.raw_report = text;
-    parsed.id = Storage.generateId(parsed.name||name);
+    if(!parsed.name && name) parsed.name = name;
+    if(!parsed.club && club) parsed.club = club;
+    parsed.id = Storage.generateId(parsed.name||name||"giocatore");
     parsed.num = Storage.nextNum();
+    // safety defaults
+    parsed.tactical_roles = parsed.tactical_roles||[];
+    parsed.tags = parsed.tags||[];
+    parsed.strengths = parsed.strengths||[];
+    parsed.weaknesses = parsed.weaknesses||[];
+    parsed.position_secondary = parsed.position_secondary||[];
+    status.textContent = "// ✓ Report generato. Anteprima sotto.";
     showPreview();
   }catch(e){
-    err.textContent="Errore durante l'analisi. Controlla la connessione, la API key o riprova. ("+e.message+")";
+    err.textContent="Errore durante l'analisi: "+e.message;
     err.classList.remove("hidden");
+    status.classList.add("hidden");
   } finally {
-    btn.textContent="⚡ Genera Report"; btn.disabled=false;
+    btn.textContent="⚡ Genera & Pubblica Report"; btn.disabled=false;
   }
 }
 
@@ -92,11 +186,22 @@ function showPreview(){
   const p = parsed;
   document.getElementById("preview").classList.remove("hidden");
   document.getElementById("prevBody").innerHTML = `
-    <h2>${U.escapeHtml(p.name)} <span style="color:var(--gray);font-size:1rem">${p.flag||""} ${U.escapeHtml(p.nationality||'')}</span></h2>
-    <div style="color:var(--gray);margin-top:.4rem">${U.escapeHtml(p.club||'')} · ${U.escapeHtml(p.position_main||'')} · ${p.age||'?'} anni</div>
+    <h2>${U.escapeHtml(p.name||"")} <span style="color:var(--gray);font-size:1rem">${p.flag||""} ${U.escapeHtml(p.nationality||'')}</span></h2>
+    <div style="color:var(--gray);margin-top:.4rem">${U.escapeHtml(p.club||'')} · ${U.escapeHtml(p.league||'')} · ${U.escapeHtml(p.position_main||'')} · ${p.age||'?'} anni · ${p.foot||''}</div>
     <div style="display:flex;gap:.5rem;margin:.8rem 0;flex-wrap:wrap">${U.verdictBadge(p.verdict_type)} <span class="chip chip-accent">★ ${(p.ratings?.overall||0).toFixed(1)}</span> ${(p.tags||[]).map(t=>`<span class="chip ${U.tagClass(t)}">${t}</span>`).join("")}</div>
+    <div class="row row-4" style="margin:1rem 0">
+      <div class="stat"><div class="stat-num" style="font-size:1.4rem">${(p.ratings?.technical||0).toFixed(1)}</div><div class="stat-lbl">Tecnica</div></div>
+      <div class="stat"><div class="stat-num" style="font-size:1.4rem">${(p.ratings?.tactical||0).toFixed(1)}</div><div class="stat-lbl">Tattica</div></div>
+      <div class="stat"><div class="stat-num" style="font-size:1.4rem">${(p.ratings?.physical||0).toFixed(1)}</div><div class="stat-lbl">Fisico</div></div>
+      <div class="stat"><div class="stat-num" style="font-size:1.4rem">${(p.ratings?.mental||0).toFixed(1)}</div><div class="stat-lbl">Mentalità</div></div>
+    </div>
     <p style="color:#cfcfcf;line-height:1.6">${U.escapeHtml(p.summary||"")}</p>
+    <div class="row row-2" style="margin-top:1rem;align-items:start">
+      <div><div class="label" style="color:var(--accent);margin-bottom:.4rem">// FORZA</div><ul style="list-style:none">${(p.strengths||[]).map(s=>`<li style="padding:.3rem 0">▸ ${U.escapeHtml(s)}</li>`).join("")}</ul></div>
+      <div><div class="label" style="color:var(--orange);margin-bottom:.4rem">// MIGLIORARE</div><ul style="list-style:none">${(p.weaknesses||[]).map(s=>`<li style="padding:.3rem 0">▸ ${U.escapeHtml(s)}</li>`).join("")}</ul></div>
+    </div>
     <div class="verdict-box ${p.verdict_type}" style="margin-top:1rem"><strong>${(p.verdict_type||'').toUpperCase()}</strong><p style="margin-top:.4rem">${U.escapeHtml(p.verdict||"")}</p></div>
+    <div style="margin-top:1rem;color:var(--gray);font-size:.85rem">Mercato: ${U.fmtMoney(p.market?.value_min||0)} – ${U.fmtMoney(p.market?.value_max||0)} · ${p.market?.potential||''} · Pronto per ${p.market?.ready_level||''}</div>
   `;
   document.getElementById("preview").scrollIntoView({behavior:"smooth"});
 }
