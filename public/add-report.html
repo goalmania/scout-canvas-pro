@@ -241,5 +241,68 @@ function del(){
   Storage.deletePlayer(P.id); location.href="/database.html";
 }
 build();
+
+// ===== AI auto-fill =====
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+document.getElementById("aiFile").onchange = async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const info = document.getElementById("aiFileInfo");
+  info.textContent = "Lettura " + f.name + "...";
+  try{
+    let txt = "";
+    if(f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")){
+      const buf = await f.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      for(let i=1;i<=pdf.numPages;i++){
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        txt += tc.items.map(it=>it.str).join(" ") + "\n\n";
+      }
+    } else { txt = await f.text(); }
+    document.getElementById("aiText").value = txt.trim();
+    info.innerHTML = `✓ <span style="color:var(--accent)">${f.name}</span> (${txt.length} caratteri)`;
+  }catch(err){ info.innerHTML = `<span style="color:var(--red)">Errore: ${err.message}</span>`; }
+};
+
+async function aiGenerate(){
+  const text = document.getElementById("aiText").value.trim();
+  const err = document.getElementById("aiErr");
+  const status = document.getElementById("aiStatus");
+  err.classList.add("hidden");
+  if(!text){ err.textContent="Carica un file o incolla del testo."; err.classList.remove("hidden"); return; }
+  const btn = document.getElementById("aiGenBtn");
+  btn.disabled = true; btn.textContent = "Analisi AI...";
+  status.classList.remove("hidden"); status.textContent = "// L'AI sta compilando tutti i campi...";
+  try{
+    const r = await fetch("/api/generate-report",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ text, name: P.name||"", club: P.club||"" })
+    });
+    const data = await r.json();
+    if(!r.ok || data.error){ throw new Error(data.error||("HTTP "+r.status)); }
+    const ai = data.report;
+    // merge into P
+    Object.assign(P, ai);
+    P.raw_report = text;
+    P.tactical_roles = ai.tactical_roles||P.tactical_roles;
+    P.tags = ai.tags||[];
+    P.strengths = ai.strengths||[];
+    P.weaknesses = ai.weaknesses||[];
+    P.position_secondary = ai.position_secondary||[];
+    P.ratings = ai.ratings||P.ratings;
+    P.skills = ai.skills||P.skills;
+    P.stars = ai.stars||P.stars;
+    P.market = ai.market||P.market;
+    build();
+    status.textContent = "// ✓ Report compilato. Rivedi e salva.";
+    document.getElementById("form").scrollIntoView({behavior:"smooth"});
+  }catch(e){
+    err.textContent = "Errore: "+e.message;
+    err.classList.remove("hidden");
+    status.classList.add("hidden");
+  }finally{
+    btn.disabled = false; btn.textContent = "⚡ Genera Report con AI";
+  }
+}
 </script>
 </body></html>
