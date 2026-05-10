@@ -6,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/main.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 <script src="/js/data.js"></script><script src="/js/storage.js"></script>
@@ -15,7 +16,26 @@
 <section style="padding-top:5rem"><div class="container" style="max-width:900px">
   <div class="label"><span class="dot"></span> // <span id="modeLabel">NUOVO REPORT GIOCATORE</span></div>
   <h1 id="pageTitle" style="margin-top:.6rem">Nuovo Report<span class="accent">.</span></h1>
-  <p style="color:var(--gray);margin-top:.5rem">Compila tutti i campi per generare la scheda completa.</p>
+  <p style="color:var(--gray);margin-top:.5rem">Compila a mano oppure usa l'AI: incolla un testo o carica un PDF/TXT e tutti i campi verranno generati automaticamente.</p>
+
+  <div class="card-flat" id="aiBlock" style="margin-top:1.5rem;border:0.5px solid var(--accent)">
+    <div class="label" style="margin-bottom:.8rem;color:var(--accent)"><span class="dot" style="background:var(--accent)"></span> // GENERATORE AI · COMPILA AUTOMATICAMENTE</div>
+    <div class="row row-2">
+      <div class="field" style="margin:0"><label>Carica PDF o TXT</label>
+        <input type="file" id="aiFile" accept=".txt,.pdf,application/pdf,text/plain">
+        <div id="aiFileInfo" style="font-size:.78rem;color:var(--gray);margin-top:.4rem">Nessun file caricato</div>
+      </div>
+      <div class="field" style="margin:0"><label>Oppure incolla il testo del tuo report</label>
+        <textarea id="aiText" rows="4" placeholder="Es: 'Luca Mancini, mezzala 2006, Bari U19, alto 178cm, ottima visione di gioco...'"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" id="aiGenBtn" onclick="aiGenerate()">⚡ Genera Report con AI</button>
+      <button class="btn btn-outline" onclick="document.getElementById('aiBlock').classList.add('hidden')">Compila a mano</button>
+    </div>
+    <div id="aiErr" class="hidden" style="margin-top:1rem;padding:.7rem 1rem;border:0.5px solid var(--red);background:rgba(255,68,68,.08);border-radius:6px;color:var(--red);font-size:.85rem"></div>
+    <div id="aiStatus" class="hidden" style="margin-top:.8rem;color:var(--accent);font-family:var(--font-mono);font-size:.8rem;letter-spacing:1px"></div>
+  </div>
 
   <div id="form" style="margin-top:2rem"></div>
 
@@ -24,7 +44,6 @@
     <button id="delBtn" class="btn btn-danger hidden" onclick="del()">Elimina</button>
     <a href="/database.html" class="btn btn-outline">Annulla</a>
   </div>
-  <div style="text-align:center;margin-top:1.5rem"><a href="/ai-report.html" style="color:var(--gray);font-size:.9rem">⚡ Preferisci descrivere il giocatore? Usa il Generatore AI →</a></div>
 </div></section>
 
 <script>
@@ -222,5 +241,68 @@ function del(){
   Storage.deletePlayer(P.id); location.href="/database.html";
 }
 build();
+
+// ===== AI auto-fill =====
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; }
+document.getElementById("aiFile").onchange = async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const info = document.getElementById("aiFileInfo");
+  info.textContent = "Lettura " + f.name + "...";
+  try{
+    let txt = "";
+    if(f.type === "application/pdf" || f.name.toLowerCase().endsWith(".pdf")){
+      const buf = await f.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      for(let i=1;i<=pdf.numPages;i++){
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        txt += tc.items.map(it=>it.str).join(" ") + "\n\n";
+      }
+    } else { txt = await f.text(); }
+    document.getElementById("aiText").value = txt.trim();
+    info.innerHTML = `✓ <span style="color:var(--accent)">${f.name}</span> (${txt.length} caratteri)`;
+  }catch(err){ info.innerHTML = `<span style="color:var(--red)">Errore: ${err.message}</span>`; }
+};
+
+async function aiGenerate(){
+  const text = document.getElementById("aiText").value.trim();
+  const err = document.getElementById("aiErr");
+  const status = document.getElementById("aiStatus");
+  err.classList.add("hidden");
+  if(!text){ err.textContent="Carica un file o incolla del testo."; err.classList.remove("hidden"); return; }
+  const btn = document.getElementById("aiGenBtn");
+  btn.disabled = true; btn.textContent = "Analisi AI...";
+  status.classList.remove("hidden"); status.textContent = "// L'AI sta compilando tutti i campi...";
+  try{
+    const r = await fetch("/api/generate-report",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ text, name: P.name||"", club: P.club||"" })
+    });
+    const data = await r.json();
+    if(!r.ok || data.error){ throw new Error(data.error||("HTTP "+r.status)); }
+    const ai = data.report;
+    // merge into P
+    Object.assign(P, ai);
+    P.raw_report = text;
+    P.tactical_roles = ai.tactical_roles||P.tactical_roles;
+    P.tags = ai.tags||[];
+    P.strengths = ai.strengths||[];
+    P.weaknesses = ai.weaknesses||[];
+    P.position_secondary = ai.position_secondary||[];
+    P.ratings = ai.ratings||P.ratings;
+    P.skills = ai.skills||P.skills;
+    P.stars = ai.stars||P.stars;
+    P.market = ai.market||P.market;
+    build();
+    status.textContent = "// ✓ Report compilato. Rivedi e salva.";
+    document.getElementById("form").scrollIntoView({behavior:"smooth"});
+  }catch(e){
+    err.textContent = "Errore: "+e.message;
+    err.classList.remove("hidden");
+    status.classList.add("hidden");
+  }finally{
+    btn.disabled = false; btn.textContent = "⚡ Genera Report con AI";
+  }
+}
 </script>
 </body></html>
