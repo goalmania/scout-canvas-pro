@@ -19,7 +19,7 @@
 <script src="/js/storage.js"></script>
 <script src="/js/util.js"></script>
 <script src="/js/nav.js"></script>
-<script>Storage.requireAuth(); UI.renderNav({scout:true});</script>
+<script>UI.renderNav({scout:true});</script>
 
 <div id="root" style="padding-top:5rem"></div>
 
@@ -43,7 +43,7 @@ function render(){
       <a href="/database.html" style="color:var(--gray);font-family:var(--font-mono);font-size:.8rem;letter-spacing:2px">← DATABASE</a>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="localStorage.setItem('dmscout_compare_id','${p.id}');location.href='/compare.html'">⇄ Compare</button>
-        <a href="/edit-report.html?id=${p.id}" class="btn btn-outline btn-sm">✏ Edit</a>
+        ${Storage.isAuthed()?`<a href="/edit-report.html?id=${p.id}" class="btn btn-outline btn-sm">✏ Edit</a>`:''}
         <button class="btn btn-primary btn-sm" onclick="window.print()">↓ PDF</button>
       </div>
     </div>
