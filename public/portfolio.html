@@ -164,6 +164,29 @@
   </div>
 </section>
 
+<!-- REPORTS PREVIEW -->
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="label"><span class="dot"></span> // SCOUTING WORK</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:1rem;margin-bottom:2rem">
+      <h2 style="margin:0">I miei report<span class="accent">.</span></h2>
+      <a href="/database.html" class="btn btn-outline">Apri tutti i report →</a>
+    </div>
+    <div class="row row-3" id="reportsPreview"></div>
+  </div>
+</section>
+<script>
+(function(){
+  const all = (window.Storage && Storage.getPlayers) ? Storage.getPlayers() : [];
+  const top = [...all].sort((a,b)=>(b.ratings?.overall||0)-(a.ratings?.overall||0)).slice(0,3);
+  const el = document.getElementById("reportsPreview");
+  if(!top.length){ el.innerHTML = '<div class="card-flat" style="grid-column:1/-1;text-align:center;color:var(--gray)">Nessun report disponibile.</div>'; }
+  else { el.innerHTML = top.map(p=>U.playerCardHtml(p)).join(""); }
+})();
+</script>
+
 <!-- CTA -->
 <section>
   <div class="container">
