@@ -8,8 +8,7 @@
     {href:"/contact.html", label:"Contatti"},
   ];
   const SCOUT_LINKS = [
-    {href:"/index.html", label:"Dashboard"},
-    {href:"/database.html", label:"Database"},
+    {href:"/database.html", label:"I Miei Report"},
     {href:"/add-report.html", label:"Nuovo Report"},
     {href:"/compare.html", label:"Compare"},
     {href:"/map.html", label:"Mappa"},
@@ -32,7 +31,7 @@
     nav.className = "nav";
     nav.innerHTML = `
       <div class="nav-inner">
-        <a href="${isScout?'/index.html':'/portfolio.html'}" class="nav-brand">
+        <a href="${isScout?'/database.html':'/portfolio.html'}" class="nav-brand">
           <img src="${logo}" alt="logo">
           <span>${brandText}</span>
         </a>

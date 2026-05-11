@@ -26,15 +26,27 @@
 
 <script>
 const all = Storage.getPlayers();
-const opts = all.map(p=>`<option value="${p.id}">${U.escapeHtml(p.name)} — ${U.escapeHtml(p.club)}</option>`).join("");
-document.getElementById("selA").innerHTML = opts;
-document.getElementById("selB").innerHTML = opts;
-const pre = localStorage.getItem("dmscout_compare_id");
-if(pre) document.getElementById("selA").value = pre;
-if(all[1]) document.getElementById("selB").value = pre===all[0]?.id ? all[1].id : all[0].id;
-document.getElementById("selA").onchange = render;
-document.getElementById("selB").onchange = render;
-render();
+const selA = document.getElementById("selA");
+const selB = document.getElementById("selB");
+if(!all.length){
+  document.getElementById("cmpBody").innerHTML = `<div class="card-flat" style="text-align:center;color:var(--gray);padding:2rem">Nessun report disponibile. <a href="/add-report.html" class="accent">Crea il primo →</a></div>`;
+} else {
+  const opts = `<option value="">— seleziona giocatore —</option>` + all.map(p=>`<option value="${p.id}">${U.escapeHtml(p.name)} — ${U.escapeHtml(p.club||'')}</option>`).join("");
+  selA.innerHTML = opts;
+  selB.innerHTML = opts;
+  const pre = localStorage.getItem("dmscout_compare_id");
+  if(pre && all.some(p=>p.id===pre)){
+    selA.value = pre;
+    const other = all.find(p=>p.id!==pre);
+    if(other) selB.value = other.id;
+  } else if(all.length>=2){
+    selA.value = all[0].id;
+    selB.value = all[1].id;
+  }
+  selA.onchange = render;
+  selB.onchange = render;
+  render();
+}
 
 function bestOf(a,b){ return a>b?"A":(b>a?"B":""); }
 function row(label,a,b,fmt){
@@ -48,9 +60,12 @@ function row(label,a,b,fmt){
 }
 
 function render(){
-  const A = Storage.getPlayer(document.getElementById("selA").value);
-  const B = Storage.getPlayer(document.getElementById("selB").value);
-  if(!A||!B) return;
+  const A = Storage.getPlayer(selA.value);
+  const B = Storage.getPlayer(selB.value);
+  if(!A||!B){
+    document.getElementById("cmpBody").innerHTML = `<div class="card-flat" style="text-align:center;color:var(--gray);padding:2rem">Seleziona due giocatori per confrontarli.</div>`;
+    return;
+  }
   const skillKeys = {ball_control:"Ball Control",passing:"Passing",dribbling:"Dribbling",finishing:"Finishing",defensive_work:"Difensiva",tactical_iq:"Tactical IQ",decision_making:"Decision",aerial:"Aerial",pace:"Pace",stamina:"Stamina"};
 
   document.getElementById("cmpBody").innerHTML = `
