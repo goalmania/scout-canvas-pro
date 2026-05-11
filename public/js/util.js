@@ -152,7 +152,7 @@ window.U = (function(){
     const verdict = verdictBadge(p.verdict_type);
     const obs = (p.observation_type||"").toUpperCase();
     return `
-    <a class="pcard" href="/player.html?id=${p.id}">
+    <div class="pcard" onclick="U.openPlayerModal('${p.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')U.openPlayerModal('${p.id}')">
       <div class="pcard-head">
         <span class="pcard-num">#${p.num||"000"}</span>
         <div class="pcard-tags">${topTags}${verdict}</div>
@@ -177,11 +177,159 @@ window.U = (function(){
       </div>
       <div class="pcard-foot">
         <span>${obs||"REPORT"} · ${p.date||""}</span>
-        <span style="color:var(--accent)">VEDI →</span>
+        <span style="color:var(--accent)">APRI →</span>
       </div>
-    </a>`;
+    </div>`;
+  }
+
+  function playerDetailHtml(p){
+    const skillLabels = {ball_control:"Ball Control",passing:"Passaggio",dribbling:"Dribbling",finishing:"Finalizzazione",defensive_work:"Difensiva",tactical_iq:"Tattica IQ",decision_making:"Decision",aerial:"Aerei",pace:"Velocità",stamina:"Resistenza"};
+    const r = p.ratings || {};
+    const canEdit = window.Storage && Storage.isAuthed();
+    return `
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;align-items:end;margin-bottom:1.2rem">
+      <div class="label">// REPORT #${p.num||""}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="localStorage.setItem('dmscout_compare_id','${p.id}');location.href='/compare.html'">⇄ Compare</button>
+        ${canEdit?`<a href="/edit-report.html?id=${p.id}" class="btn btn-outline btn-sm">✏ Edit</a>`:''}
+        <a href="/player.html?id=${p.id}" class="btn btn-outline btn-sm" target="_blank">⤓ PDF</a>
+      </div>
+    </div>
+
+    <div class="card-flat" style="display:grid;grid-template-columns:auto 1fr auto;gap:1.5rem;align-items:center;margin-bottom:1.2rem">
+      ${p.photo ? `<img src="${p.photo}" class="photo-square" alt="${escapeHtml(p.name)}">` : `<div class="photo-square">${(p.name||'?').split(' ').map(s=>s[0]).join('').slice(0,2)}</div>`}
+      <div>
+        <div class="mono" style="color:var(--gray);font-size:.75rem;letter-spacing:2px">${p.flag||''} ${escapeHtml(p.nationality||'')}</div>
+        <h1 style="margin:.3rem 0;font-size:2rem">${escapeHtml(p.name)}</h1>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+          <span class="chip chip-accent">${escapeHtml(p.position_main||'')}</span>
+          ${(p.position_secondary||[]).map(s=>`<span class="chip">${escapeHtml(s)}</span>`).join("")}
+          ${verdictBadge(p.verdict_type)}
+        </div>
+        <div style="color:var(--gray);font-size:.95rem;margin-top:.6rem">${escapeHtml(p.club||'')} · ${escapeHtml(p.league||'')}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="stat-num" style="font-size:3rem;color:var(--accent)">${(r.overall||0).toFixed(1)}</div>
+        <div class="stat-lbl">Overall</div>
+      </div>
+    </div>
+
+    <div class="row row-4" style="margin-bottom:1.2rem">
+      <div class="stat"><div class="stat-num" style="font-size:1.6rem">${p.age||'—'}</div><div class="stat-lbl">Età · ${p.birth_year||''}</div></div>
+      <div class="stat"><div class="stat-num" style="font-size:1.6rem">${p.height||'—'}<span style="font-size:.85rem">cm</span></div><div class="stat-lbl">Altezza</div></div>
+      <div class="stat"><div class="stat-num" style="font-size:1.6rem">${p.weight||'—'}<span style="font-size:.85rem">kg</span></div><div class="stat-lbl">Peso</div></div>
+      <div class="stat"><div class="stat-num" style="font-size:1.6rem">${escapeHtml(p.foot||'—')}</div><div class="stat-lbl">Piede</div></div>
+    </div>
+
+    <div class="row row-2" style="margin-bottom:1.2rem;align-items:start">
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:1rem">// VALUTAZIONI</div>
+        <canvas id="modalRadar" width="380" height="380" style="max-width:100%;height:auto"></canvas>
+      </div>
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:1rem">// SKILLS</div>
+        ${Object.keys(skillLabels).map(k=>`
+          <div class="bar-row"><span class="lab">${skillLabels[k]}</span><div class="bar"><div class="bar-fill" style="width:${(p.skills&&p.skills[k])||0}%"></div></div><span class="val">${(p.skills&&p.skills[k])||0}</span></div>
+        `).join("")}
+      </div>
+    </div>
+
+    ${p.stars?`<div class="card-flat" style="margin-bottom:1.2rem">
+      <div class="label" style="margin-bottom:1rem">// STELLE</div>
+      <div class="row row-3">
+        ${["technique","athleticism","mentality","potential","market_value"].map(k=>`
+          <div><div style="font-family:var(--font-mono);font-size:.72rem;letter-spacing:2px;color:var(--gray);margin-bottom:.3rem">${({technique:"TECNICA",athleticism:"ATLETISMO",mentality:"MENTALITÀ",potential:"POTENZIALE",market_value:"VALORE"})[k]}</div>${starsRow(p.stars[k]||0)}</div>
+        `).join("")}
+      </div>
+    </div>`:''}
+
+    ${(p.tactical_roles||[]).length?`<div class="card-flat" style="margin-bottom:1.2rem">
+      <div class="label" style="margin-bottom:1rem">// RUOLI TATTICI</div>
+      <div class="row row-2">
+        ${(p.tactical_roles||[]).map(rr=>`
+          <div style="padding:1rem;border:0.5px solid var(--border);border-radius:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+              <span class="chip chip-accent">${rr.formation}</span>
+              <span class="mono" style="color:var(--accent);font-weight:700">${rr.fit_score}%</span>
+            </div>
+            <div style="font-family:var(--font-display);font-weight:700;text-transform:uppercase">${escapeHtml(rr.role)}</div>
+            <div class="bar" style="margin-top:.6rem"><div class="bar-fill" style="width:${rr.fit_score}%"></div></div>
+          </div>
+        `).join("")}
+      </div>
+    </div>`:''}
+
+    ${p.market?`<div class="card-flat" style="margin-bottom:1.2rem">
+      <div class="label" style="margin-bottom:1rem">// MERCATO</div>
+      <div class="row row-4">
+        <div><div class="label">Range Valore</div><div style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;color:var(--accent)">${fmtMoney(p.market.value_min)} – ${fmtMoney(p.market.value_max)}</div></div>
+        <div><div class="label">Potenziale</div><div style="font-family:var(--font-display);font-size:1.05rem;font-weight:700">${escapeHtml(p.market.potential||'—')}</div></div>
+        <div><div class="label">Rischio</div><div style="font-family:var(--font-display);font-size:1.05rem;font-weight:700">${escapeHtml(p.market.risk||'—')}</div></div>
+        <div><div class="label">Pronto per</div><div style="font-family:var(--font-display);font-size:1.05rem;font-weight:700">${escapeHtml(p.market.ready_level||'—')}</div></div>
+      </div>
+      ${p.market.timeline?`<div style="margin-top:.8rem;color:var(--gray);font-size:.9rem">Timeline: ${escapeHtml(p.market.timeline)}</div>`:''}
+    </div>`:''}
+
+    ${(p.tags||[]).length?`<div class="card-flat" style="margin-bottom:1.2rem"><div class="label" style="margin-bottom:.7rem">// TAGS</div>${tags(p)}</div>`:''}
+
+    <div class="row row-2" style="margin-bottom:1.2rem;align-items:start">
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:.7rem;color:var(--accent)">// PUNTI DI FORZA</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:.5rem">
+          ${(p.strengths||[]).map(s=>`<li style="padding:.5rem .8rem;border-left:2px solid var(--accent);background:var(--accent-dim)">${escapeHtml(s)}</li>`).join("")}
+        </ul>
+      </div>
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:.7rem;color:var(--orange)">// AREE DI MIGLIORAMENTO</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:.5rem">
+          ${(p.weaknesses||[]).map(s=>`<li style="padding:.5rem .8rem;border-left:2px solid var(--orange);background:rgba(255,140,0,.08)">${escapeHtml(s)}</li>`).join("")}
+        </ul>
+      </div>
+    </div>
+
+    ${p.summary?`<div class="card-flat" style="margin-bottom:1.2rem">
+      <div class="label" style="margin-bottom:.7rem">// ANALISI</div>
+      <p style="line-height:1.7">${escapeHtml(p.summary)}</p>
+    </div>`:''}
+
+    <div class="verdict-box ${p.verdict_type||''}">
+      <div class="label" style="margin-bottom:.5rem">// VERDETTO FINALE</div>
+      <h3 style="font-size:1.4rem">${(p.verdict_type||'').toUpperCase()}</h3>
+      <p style="margin-top:.6rem;line-height:1.6">${escapeHtml(p.verdict||'')}</p>
+    </div>
+    `;
+  }
+
+  function escClose(e){ if(e.key==="Escape") closePlayerModal(); }
+  function openPlayerModal(id){
+    const p = window.Storage && Storage.getPlayer(id);
+    if(!p) return;
+    closePlayerModal();
+    const overlay = document.createElement("div");
+    overlay.className = "pmodal";
+    overlay.id = "pmodal";
+    overlay.innerHTML = `<div class="pmodal-box">
+      <button class="pmodal-close" aria-label="Chiudi" onclick="U.closePlayerModal()">✕</button>
+      <div class="pmodal-body">${playerDetailHtml(p)}</div>
+    </div>`;
+    overlay.addEventListener("click", e => { if(e.target===overlay) closePlayerModal(); });
+    document.body.appendChild(overlay);
+    document.body.classList.add("modal-open");
+    const r = p.ratings || {};
+    const canvas = overlay.querySelector("#modalRadar");
+    if(canvas) drawRadar(canvas,{
+      labels:["Tecnica","Tattica","Fisico","Mentalità","Overall"],
+      datasets:[{values:[r.technical||0,r.tactical||0,r.physical||0,r.mental||0,r.overall||0],fill:"rgba(200,240,0,0.18)",stroke:"#c8f000"}]
+    },{max:10});
+    document.addEventListener("keydown", escClose);
+  }
+  function closePlayerModal(){
+    const m = document.getElementById("pmodal");
+    if(m) m.remove();
+    document.body.classList.remove("modal-open");
+    document.removeEventListener("keydown", escClose);
   }
 
   return {POS_LABELS,POS_TO_CODE,ROLES_BY_POS,FORMATIONS,REGIONS,TAGS,
-    tagClass,verdictBadge,star,starsRow,fmtMoney,drawRadar,tags,downloadPDF,escapeHtml,playerCardHtml};
+    tagClass,verdictBadge,star,starsRow,fmtMoney,drawRadar,tags,downloadPDF,escapeHtml,playerCardHtml,playerDetailHtml,openPlayerModal,closePlayerModal};
 })();
