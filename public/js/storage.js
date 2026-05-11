@@ -49,22 +49,38 @@
     a.href = url; a.download = "dmscout-players-"+new Date().toISOString().slice(0,10)+".json";
     a.click(); URL.revokeObjectURL(url);
   }
+  function normalize(p){
+    p = Object.assign({}, p);
+    if(!p.id) p.id = generateId(p.name||"player");
+    p.ratings = Object.assign({technical:0,tactical:0,physical:0,mental:0,overall:0}, p.ratings||{});
+    p.tags = Array.isArray(p.tags) ? p.tags : [];
+    p.position_main = p.position_main || p.position || "—";
+    return p;
+  }
   function importJSON(file){
     return new Promise((res,rej)=>{
       const reader = new FileReader();
       reader.onload = e => {
         try{
-          const arr = JSON.parse(e.target.result);
-          if(!Array.isArray(arr)) throw new Error("invalid");
+          let data = JSON.parse(e.target.result);
+          // Accept array, {players:[]}, {data:[]}
+          if(!Array.isArray(data)){
+            if(Array.isArray(data.players)) data = data.players;
+            else if(Array.isArray(data.data)) data = data.data;
+            else throw new Error("Formato JSON non riconosciuto (atteso array di report)");
+          }
           const all = getPlayers();
-          arr.forEach(p=>{
+          let count = 0;
+          data.forEach(raw=>{
+            const p = normalize(raw);
             const i = all.findIndex(x=>x.id===p.id);
-            if(i>=0) all[i]=p; else all.push(p);
+            if(i>=0) all[i]=p; else { if(!p.num) p.num = String(all.length+count+1).padStart(3,"0"); all.push(p); }
+            count++;
           });
-          savePlayers(all); res(arr.length);
+          savePlayers(all); res(count);
         }catch(err){ rej(err); }
       };
-      reader.onerror = rej;
+      reader.onerror = () => rej(new Error("lettura file fallita"));
       reader.readAsText(file);
     });
   }
