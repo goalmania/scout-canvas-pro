@@ -20,7 +20,11 @@
     <div class="label"><span class="dot"></span> // DATABASE GIOCATORI</div>
     <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:1rem;margin-top:.6rem">
       <h1>Database<span class="accent">.</span></h1>
-      <a href="/add-report.html" class="btn btn-primary">+ Nuovo Report</a>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+        <a href="/add-report.html" class="btn btn-primary">+ Nuovo Report</a>
+        <button class="btn btn-outline" onclick="Storage.exportJSON()">↓ Export JSON</button>
+        <label class="btn btn-outline" style="cursor:pointer">↑ Import JSON<input type="file" accept="application/json,.json" hidden id="imp"></label>
+      </div>
     </div>
 
     <div class="filter-bar" style="margin-top:2rem">
@@ -29,17 +33,12 @@
       <div class="field"><label>Verdetto</label><select id="fVerdict"><option value="">Tutti</option><option value="buy">BUY</option><option value="monitor">MONITOR</option><option value="pass">PASS</option></select></div>
       <div class="field"><label>Regione</label><select id="fRegion"><option value="">Tutte</option></select></div>
       <div class="field"><label>Ordina per</label><select id="fSort">
-        <option value="date">Data ↓</option><option value="overall">Overall ↓</option><option value="age">Età ↑</option><option value="name">Nome A-Z</option>
+        <option value="overall">Overall ↓</option><option value="date">Data ↓</option><option value="age">Età ↑</option><option value="name">Nome A-Z</option>
       </select></div>
     </div>
 
-    <div id="count" class="mono" style="color:var(--gray);font-size:.8rem;letter-spacing:2px;margin-bottom:1rem"></div>
-    <div class="table-wrap">
-      <table id="tbl">
-        <thead><tr><th>#</th><th>Nome</th><th>Età</th><th>Club</th><th>Pos</th><th>Regione</th><th>Overall</th><th>Verdetto</th><th>Tags</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <div id="count" class="mono" style="color:var(--gray);font-size:.8rem;letter-spacing:2px;margin:1rem 0 1.5rem"></div>
+    <div id="grid" class="row row-3"></div>
   </div>
 </section>
 
@@ -64,27 +63,29 @@ function render(){
     return true;
   });
   arr.sort((a,b)=>{
-    if(sort==="overall") return b.ratings.overall-a.ratings.overall;
-    if(sort==="age") return a.age-b.age;
+    if(sort==="overall") return (b.ratings?.overall||0)-(a.ratings?.overall||0);
+    if(sort==="age") return (a.age||0)-(b.age||0);
     if(sort==="name") return a.name.localeCompare(b.name);
     return (b.date||"").localeCompare(a.date||"");
   });
-  document.getElementById("count").textContent = arr.length+" GIOCATORI";
-  document.querySelector("#tbl tbody").innerHTML = arr.map(p=>`
-    <tr onclick="location.href='/player.html?id=${p.id}'">
-      <td class="mono" style="color:var(--gray)">#${p.num}</td>
-      <td><strong>${U.escapeHtml(p.name)}</strong> <span style="color:var(--gray);font-size:.85rem">${p.flag||""}</span></td>
-      <td>${p.age}</td>
-      <td>${U.escapeHtml(p.club)}<div style="color:var(--gray);font-size:.78rem">${U.escapeHtml(p.league||"")}</div></td>
-      <td><span class="chip">${U.escapeHtml(p.position_main)}</span></td>
-      <td>${U.escapeHtml(p.region||"")}</td>
-      <td><span class="chip chip-accent">${p.ratings.overall.toFixed(1)}</span></td>
-      <td>${U.verdictBadge(p.verdict_type)}</td>
-      <td>${(p.tags||[]).slice(0,2).map(t=>`<span class="chip ${U.tagClass(t)}" style="font-size:.6rem">${t}</span>`).join(" ")}</td>
-    </tr>`).join("") || `<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:3rem">Nessun risultato</td></tr>`;
+  document.getElementById("count").textContent = arr.length+" REPORT";
+  document.getElementById("grid").innerHTML = arr.map(p=>U.playerCardHtml(p)).join("") || `<div class="card-flat" style="grid-column:1/-1;text-align:center;color:var(--gray);padding:3rem">Nessun risultato</div>`;
 }
 ["fSearch","fPos","fVerdict","fRegion","fSort"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 render();
+
+document.getElementById("imp").onchange = async (e) => {
+  const f = e.target.files[0];
+  if(!f) return;
+  try{
+    const n = await Storage.importJSON(f);
+    alert(n+" report importati con successo");
+    location.reload();
+  }catch(err){
+    console.error(err);
+    alert("Errore import JSON: "+(err && err.message ? err.message : "file non valido"));
+  }finally{ e.target.value=""; }
+};
 </script>
 </body>
 </html>

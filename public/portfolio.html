@@ -10,7 +10,9 @@
 <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
+<script src="/js/data.js"></script>
 <script src="/js/storage.js"></script>
+<script src="/js/util.js"></script>
 <script src="/js/nav.js"></script>
 <script>UI.renderNav({scout:false});</script>
 
@@ -27,7 +29,7 @@
         <div class="fade fade-3" style="display:flex;gap:.8rem;flex-wrap:wrap">
           <a href="#about" class="btn btn-primary">Scopri il profilo →</a>
           <a href="/services.html" class="btn btn-outline">I miei progetti</a>
-          <a href="/index.html" class="btn btn-outline">Area Scout 🔒</a>
+          <a href="/database.html" class="btn btn-outline">I miei report →</a>
         </div>
         <div class="fade fade-4" style="display:flex;gap:2rem;margin-top:3rem;flex-wrap:wrap">
           <div><div class="stat-num">93<span style="font-size:1rem;color:var(--gray)">/100</span></div><div class="stat-lbl">Diploma Ragioneria</div></div>
@@ -162,6 +164,29 @@
   </div>
 </section>
 
+<!-- REPORTS PREVIEW -->
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="label"><span class="dot"></span> // SCOUTING WORK</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:1rem;margin-bottom:2rem">
+      <h2 style="margin:0">I miei report<span class="accent">.</span></h2>
+      <a href="/database.html" class="btn btn-outline">Apri tutti i report →</a>
+    </div>
+    <div class="row row-3" id="reportsPreview"></div>
+  </div>
+</section>
+<script>
+(function(){
+  const all = (window.Storage && Storage.getPlayers) ? Storage.getPlayers() : [];
+  const top = [...all].sort((a,b)=>(b.ratings?.overall||0)-(a.ratings?.overall||0)).slice(0,3);
+  const el = document.getElementById("reportsPreview");
+  if(!top.length){ el.innerHTML = '<div class="card-flat" style="grid-column:1/-1;text-align:center;color:var(--gray)">Nessun report disponibile.</div>'; }
+  else { el.innerHTML = top.map(p=>U.playerCardHtml(p)).join(""); }
+})();
+</script>
+
 <!-- CTA -->
 <section>
   <div class="container">
@@ -171,7 +196,7 @@
       <p style="color:var(--gray);max-width:580px;margin:1rem auto 1.8rem">Scout, dati, gestione amministrativa, social media. Mettimi alla prova: voglio costruire la prossima fase del calcio professionistico.</p>
       <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
         <a href="/contact.html" class="btn btn-primary">Contattami →</a>
-        <a href="/index.html" class="btn btn-outline">Area Scout (privata)</a>
+        <a href="/database.html" class="btn btn-outline">I miei report</a>
       </div>
     </div>
   </div>

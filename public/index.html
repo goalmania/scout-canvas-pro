@@ -25,12 +25,11 @@
 
     <div style="margin-top:2.5rem;display:flex;gap:.7rem;flex-wrap:wrap">
       <a href="/add-report.html" class="btn btn-primary">+ Nuovo Report</a>
-      <a href="/ai-report.html" class="btn btn-secondary">⚡ Generatore AI</a>
       <a href="/database.html" class="btn btn-outline">Database</a>
       <a href="/compare.html" class="btn btn-outline">Compare</a>
       <a href="/map.html" class="btn btn-outline">Mappa</a>
       <button class="btn btn-outline" onclick="Storage.exportJSON()">↓ Export JSON</button>
-      <label class="btn btn-outline" style="cursor:pointer">↑ Import JSON<input type="file" accept="application/json" hidden id="imp"></label>
+      <label class="btn btn-outline" style="cursor:pointer">↑ Import JSON<input type="file" accept="application/json,.json" hidden id="imp"></label>
     </div>
   </div>
 </section>
@@ -66,20 +65,7 @@ document.getElementById("stats").innerHTML = `
   <div class="stat"><div class="stat-num">${new Set(all.map(p=>p.league)).size}</div><div class="stat-lbl">Campionati</div></div>
 `;
 const recent = [...all].sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,6);
-document.getElementById("recent").innerHTML = recent.map(p=>`
-  <a class="card" href="/player.html?id=${p.id}" style="display:block">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
-      <span class="mono" style="color:var(--gray);font-size:.75rem;letter-spacing:2px">#${p.num}</span>
-      ${U.verdictBadge(p.verdict_type)}
-    </div>
-    <h3 style="font-size:1.2rem">${U.escapeHtml(p.name)}</h3>
-    <div style="color:var(--gray);font-size:.88rem;margin-top:.2rem">${U.escapeHtml(p.club)} · ${U.escapeHtml(p.position_main)}</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem">
-      <span class="chip chip-accent">★ ${p.ratings.overall.toFixed(1)}</span>
-      <span class="mono" style="color:var(--gray);font-size:.75rem">${p.date||""}</span>
-    </div>
-  </a>
-`).join("");
+document.getElementById("recent").innerHTML = recent.map(p=>U.playerCardHtml(p)).join("") || `<div class="card-flat" style="grid-column:1/-1;text-align:center;color:var(--gray)">Nessun report.</div>`;
 
 // verdicts
 const buy=all.filter(p=>p.verdict_type==='buy').length;
@@ -105,10 +91,16 @@ document.getElementById("topRated").innerHTML = top.map((p,i)=>`
 `).join("");
 
 document.getElementById("imp").onchange = async (e) => {
-  if(e.target.files[0]){
-    try{ const n = await Storage.importJSON(e.target.files[0]); alert(n+" giocatori importati"); location.reload(); }
-    catch(err){ alert("File non valido"); }
-  }
+  const f = e.target.files[0];
+  if(!f) return;
+  try{
+    const n = await Storage.importJSON(f);
+    alert(n+" report importati con successo");
+    location.reload();
+  }catch(err){
+    console.error(err);
+    alert("Errore import JSON: "+(err && err.message ? err.message : "file non valido"));
+  }finally{ e.target.value=""; }
 };
 </script>
 </body>
