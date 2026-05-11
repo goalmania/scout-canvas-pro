@@ -224,3 +224,21 @@ tbody tr:last-child td{border-bottom:none}
   .bar{background:#eee}
   .bar-fill{background:#5a8a00}
 }
+
+/* ===== Rounded Player Card (DM Scout style) ===== */
+.pcard{background:var(--gray-light);border:0.5px solid var(--border);border-radius:16px;padding:1.4rem;display:flex;flex-direction:column;gap:.9rem;transition:.2s;color:var(--white);text-decoration:none;position:relative;overflow:hidden}
+.pcard:hover{border-color:var(--accent);transform:translateY(-3px);box-shadow:0 12px 32px -16px rgba(200,240,0,.25)}
+.pcard-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}
+.pcard-num{font-family:var(--font-mono);color:var(--gray);font-size:.78rem;letter-spacing:2px}
+.pcard-tags{display:flex;gap:.4rem;flex-wrap:wrap}
+.pcard-name{font-family:var(--font-display);font-weight:800;font-size:1.35rem;line-height:1.1;text-transform:uppercase;letter-spacing:.5px;margin:0}
+.pcard-meta{color:var(--gray);font-size:.85rem;display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+.pcard-overall{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem}
+.pcard-overall .lbl{font-family:var(--font-mono);font-size:.7rem;letter-spacing:2px;color:var(--gray)}
+.pcard-overall .num{font-family:var(--font-display);font-weight:800;font-size:2.6rem;line-height:1;color:var(--accent)}
+.pcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem 1.2rem}
+.pcard-stat .lab{font-family:var(--font-mono);font-size:.68rem;letter-spacing:2px;color:var(--gray);display:flex;justify-content:space-between}
+.pcard-stat .lab b{color:var(--white);font-family:var(--font-display);font-weight:700;font-size:.95rem}
+.pcard-stat .b{margin-top:.3rem;height:4px;background:var(--gray-mid);border-radius:999px;overflow:hidden}
+.pcard-stat .b>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px}
+.pcard-foot{display:flex;justify-content:space-between;align-items:center;padding-top:.6rem;border-top:0.5px solid var(--border);font-family:var(--font-mono);font-size:.72rem;letter-spacing:2px;color:var(--gray);text-transform:uppercase}
