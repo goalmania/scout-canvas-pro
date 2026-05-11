@@ -141,6 +141,47 @@ window.U = (function(){
     return String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   }
 
+  function playerCardHtml(p){
+    const r = p.ratings || {};
+    const stat = (lab,val) => `
+      <div class="pcard-stat">
+        <div class="lab"><span>${lab}</span><b>${(val||0).toFixed(1)}</b></div>
+        <div class="b"><i style="width:${Math.min(100,(val||0)*10)}%"></i></div>
+      </div>`;
+    const topTags = (p.tags||[]).slice(0,2).map(t=>`<span class="chip ${tagClass(t)}" style="font-size:.62rem">${t}</span>`).join("");
+    const verdict = verdictBadge(p.verdict_type);
+    const obs = (p.observation_type||"").toUpperCase();
+    return `
+    <a class="pcard" href="/player.html?id=${p.id}">
+      <div class="pcard-head">
+        <span class="pcard-num">#${p.num||"000"}</span>
+        <div class="pcard-tags">${topTags}${verdict}</div>
+      </div>
+      <div>
+        <h3 class="pcard-name">${escapeHtml(p.name)}</h3>
+        <div style="color:var(--gray);font-size:.88rem;margin-top:.2rem">${escapeHtml(p.club||"")}</div>
+        <div class="pcard-meta" style="margin-top:.3rem">${p.flag||""} ${escapeHtml(p.position_main||"")} · ${p.birth_year||p.age||""}</div>
+      </div>
+      <div class="pcard-overall">
+        <div>
+          <div class="lbl">OVERALL</div>
+          <div class="num">${(r.overall||0).toFixed(1)}</div>
+        </div>
+        <div>${starsRow(Math.round((r.overall||0)/2))}</div>
+      </div>
+      <div class="pcard-grid">
+        ${stat("TECNICA", r.technical)}
+        ${stat("TATTICA", r.tactical)}
+        ${stat("FISICO", r.physical)}
+        ${stat("MENTALITÀ", r.mental)}
+      </div>
+      <div class="pcard-foot">
+        <span>${obs||"REPORT"} · ${p.date||""}</span>
+        <span style="color:var(--accent)">VEDI →</span>
+      </div>
+    </a>`;
+  }
+
   return {POS_LABELS,POS_TO_CODE,ROLES_BY_POS,FORMATIONS,REGIONS,TAGS,
-    tagClass,verdictBadge,star,starsRow,fmtMoney,drawRadar,tags,downloadPDF,escapeHtml};
+    tagClass,verdictBadge,star,starsRow,fmtMoney,drawRadar,tags,downloadPDF,escapeHtml,playerCardHtml};
 })();
