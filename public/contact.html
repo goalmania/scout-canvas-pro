@@ -22,42 +22,30 @@
 
     <div class="row row-2" style="margin-top:2.5rem;align-items:start">
       <div class="card-flat">
-        <h3 style="margin-bottom:1.2rem">Invia un messaggio</h3>
-        <form id="contactForm" onsubmit="return sendMsg(event)">
-          <div class="field"><label>Nome e Cognome</label><input type="text" id="cName" required></div>
-          <div class="field"><label>Email</label><input type="email" id="cEmail" required></div>
-          <div class="field"><label>Agenzia / Club / Organizzazione</label><input type="text" id="cOrg"></div>
-          <div class="field"><label>Messaggio</label><textarea id="cMsg" rows="6" required></textarea></div>
-          <button type="submit" class="btn btn-primary btn-block">Invia messaggio →</button>
-          <div id="cOk" class="hidden" style="margin-top:1rem;padding:.8rem 1rem;border:0.5px solid var(--accent);background:var(--accent-dim);border-radius:6px;color:var(--accent)">✓ Messaggio pronto. Si aprirà il tuo client mail.</div>
-        </form>
+        <div class="label" style="margin-bottom:.4rem">// EMAIL</div>
+        <a href="mailto:dimuropaolo7@gmail.com" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--accent);word-break:break-all">dimuropaolo7@gmail.com</a>
       </div>
-
-      <div class="row" style="grid-template-columns:1fr">
-        <div class="card-flat">
-          <div class="label" style="margin-bottom:.4rem">// EMAIL</div>
-          <a href="mailto:dimuropaolo7@gmail.com" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--accent);word-break:break-all">dimuropaolo7@gmail.com</a>
-        </div>
-        <div class="card-flat">
-          <div class="label" style="margin-bottom:.4rem">// TELEFONO</div>
-          <a href="tel:+393334218596" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--accent)">+39 333 421 8596</a>
-        </div>
-        <div class="card-flat">
-          <div class="label" style="margin-bottom:.4rem">// INSTAGRAM</div>
-          <a href="https://instagram.com/goalmania" target="_blank" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700">@goalmania</a>
-          <div style="color:var(--gray);font-size:.9rem;margin-top:.3rem">20.6K followers · pagina calcistica</div>
-        </div>
-        <div class="card-flat">
-          <div class="label" style="margin-bottom:.4rem">// LOCATION</div>
-          <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;text-transform:uppercase">Italia · Roma</div>
-          <div style="color:var(--gray);font-size:.9rem;margin-top:.3rem">Disponibile a trasferte e on-site</div>
-        </div>
-        <div class="card-flat">
-          <div class="label" style="margin-bottom:.4rem">// LANGUAGES</div>
-          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem">
-            <span class="chip chip-accent">🇮🇹 Italiano (madre)</span>
-            <span class="chip chip-accent2">🇬🇧 English (Football EN)</span>
-          </div>
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:.4rem">// TELEFONO</div>
+        <a href="tel:+393334218596" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--accent)">+39 333 421 8596</a>
+      </div>
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:.4rem">// INSTAGRAM</div>
+        <a href="https://instagram.com/goalmania.it" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:1.3rem;font-weight:700">@goalmania.it</a>
+        <div style="color:var(--gray);font-size:.9rem;margin-top:.3rem">20.6K followers · pagina calcistica</div>
+      </div>
+      <div class="card-flat">
+        <div class="label" style="margin-bottom:.4rem">// LOCATION</div>
+        <div style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;text-transform:uppercase">Italia</div>
+        <div style="color:var(--gray);font-size:.9rem;margin-top:.3rem">Disponibile a trasferte e on-site</div>
+      </div>
+      <div class="card-flat" style="grid-column:1/-1">
+        <div class="label" style="margin-bottom:.4rem">// LANGUAGES</div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.4rem">
+          <span class="chip chip-accent">🇮🇹 Italiano (madre)</span>
+          <span class="chip chip-accent2">🇬🇧 English (Football EN)</span>
+          <span class="chip chip-accent">🇫🇷 Français (basi)</span>
+          <span class="chip chip-accent2">🇪🇸 Español (in studio)</span>
         </div>
       </div>
     </div>
@@ -65,18 +53,6 @@
 </section>
 
 <script>
-function sendMsg(e){
-  e.preventDefault();
-  const n=document.getElementById('cName').value;
-  const em=document.getElementById('cEmail').value;
-  const o=document.getElementById('cOrg').value;
-  const m=document.getElementById('cMsg').value;
-  const subj=encodeURIComponent("Contatto Portfolio — "+n+(o?" ("+o+")":""));
-  const body=encodeURIComponent("Da: "+n+"\nEmail: "+em+"\nOrg: "+o+"\n\n"+m);
-  window.location.href="mailto:dimuropaolo7@gmail.com?subject="+subj+"&body="+body;
-  document.getElementById('cOk').classList.remove('hidden');
-  return false;
-}
 UI.renderFooter();
 </script>
 </body>
