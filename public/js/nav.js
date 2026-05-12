@@ -25,16 +25,14 @@
       const cls = (l.accent ? "nav-cta " : "") + active;
       return `<a href="${l.href}" class="${cls}">${l.label}</a>`;
     }).join("");
-    const logo = isScout ? "/assets/logo-dmscout.png" : "/assets/logo-dmfs.png";
-    const brandText = isScout ? "DM Scout" : "Paolo Di Muro";
     const nav = document.createElement("nav");
     nav.className = "nav";
+    const brandHtml = isScout
+      ? `<a href="/database.html" class="nav-brand" style="font-family:var(--font-mono);font-size:.85rem;letter-spacing:2px;text-transform:uppercase;color:var(--white)">I Miei Report</a>`
+      : `<a href="/portfolio.html" class="nav-brand"><img src="/assets/logo-dmfs.png" alt="logo"><span>Paolo Di Muro</span></a>`;
     nav.innerHTML = `
       <div class="nav-inner">
-        <a href="${isScout?'/database.html':'/portfolio.html'}" class="nav-brand">
-          <img src="${logo}" alt="logo">
-          <span>${brandText}</span>
-        </a>
+        ${brandHtml}
         <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
         <div class="nav-links" id="navLinks">${linksHtml}
           ${isScout?'<a href="#" id="navLogout" style="color:var(--red)">Esci</a>':''}
