@@ -10,7 +10,7 @@
   const SCOUT_LINKS = [
     {href:"/database.html", label:"I Miei Report"},
     {href:"/add-report.html", label:"Nuovo Report"},
-    {href:"/compare.html", label:"Compare"},
+    {href:"/compare.html", label:"Confronta"},
     {href:"/map.html", label:"Mappa"},
     {href:"/portfolio.html", label:"← Portfolio"},
   ];
