@@ -253,3 +253,10 @@ tbody tr:last-child td{border-bottom:none}
 @media(max-width:640px){.pmodal-body{padding:1rem 1.1rem 2rem}}
 body.modal-open{overflow:hidden}
 .pcard{cursor:pointer}
+
+/* Language switcher */
+.lang-switch{display:flex;gap:.25rem;align-items:center;margin-left:.6rem}
+.lang-switch button{background:transparent;border:1px solid var(--border);color:var(--gray);font-family:var(--font-mono);font-size:.7rem;letter-spacing:1px;padding:.3rem .5rem;border-radius:6px;cursor:pointer;transition:all .15s}
+.lang-switch button:hover{color:var(--white);border-color:var(--accent)}
+.lang-switch button.on{background:var(--accent);color:var(--black);border-color:var(--accent);font-weight:700}
+@media(max-width:900px){.lang-switch{margin:.4rem 0;justify-content:center}}
