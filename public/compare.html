@@ -26,7 +26,7 @@
 </div></section>
 
 <script>
-const all = Storage.getPlayers();
+let all = Storage.getPlayers();
 const selA = document.getElementById("selA");
 const selB = document.getElementById("selB");
 if(!all.length){
@@ -124,5 +124,17 @@ function render(){
     ]
   },{max:10});
 }
+
+document.addEventListener("dmscout:synced", ()=>{
+  all = Storage.getPlayers();
+  const curA = selA.value;
+  const curB = selB.value;
+  const opts = `<option value="">— seleziona giocatore —</option>` + all.map(p=>`<option value="${p.id}">${U.escapeHtml(p.name)} — ${U.escapeHtml(p.club||'')}</option>`).join("");
+  selA.innerHTML = opts;
+  selB.innerHTML = opts;
+  if(curA) selA.value = curA;
+  if(curB) selB.value = curB;
+  render();
+});
 </script>
 </body></html>

@@ -2,6 +2,11 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handlePlayersApi } from "./lib/players-api";
+
+interface Env {
+  DB: D1Database;
+}
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -50,8 +55,6 @@ function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boole
   );
 }
 
-// h3 swallows in-handler throws into a normal 500 Response with body
-// {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -67,7 +70,14 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 }
 
 export default {
-  async fetch(request: Request, env: unknown, ctx: unknown) {
+  async fetch(request: Request, env: Env, ctx: unknown) {
+    const url = new URL(request.url);
+
+    // Players CRUD API — handled directly with D1, not through TanStack Start
+    if (url.pathname.startsWith("/api/players")) {
+      return handlePlayersApi(request, env);
+    }
+
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

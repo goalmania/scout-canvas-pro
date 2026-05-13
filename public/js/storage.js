@@ -1,17 +1,20 @@
-// storage.js — localStorage CRUD layer
+// storage.js — localStorage CRUD layer + D1 server sync
 (function(){
   const KEY = "dmscout_players";
   const AUTH_KEY = "dmscout_auth";
   const MIGRATION_KEY = "dmscout_migrated_v2";
-  const PASSWORD = "paolodm2026"; // hardcoded password gate
+  const PASSWORD = "paolodm2026";
 
-  // IDs of the old demo/seed players — remove them on first load after this update
+  // IDs of old demo/seed players — purged on first load after deploy
   const DEMO_IDS = [
     "luca-mancini","matteo-russo","giuseppe-de-luca","andrea-bianchi",
     "salvatore-greco","francesco-romano","davide-conti","alessandro-marino",
     "nicola-ferrari","emanuele-vitale","marco-esposito","riccardo-galli"
   ];
 
+  const API_HEADERS = { "Content-Type": "application/json", "x-dmscout-key": PASSWORD };
+
+  // ── Migration ─────────────────────────────────────────────────────────────
   function removeDemoPlayers(){
     if(localStorage.getItem(MIGRATION_KEY)) return;
     try{
@@ -25,19 +28,27 @@
     localStorage.setItem(MIGRATION_KEY, "1");
   }
 
+  // ── localStorage helpers ───────────────────────────────────────────────────
   function seed(){
     if(!localStorage.getItem(KEY)){
       localStorage.setItem(KEY, JSON.stringify([]));
     }
   }
 
+  function _read(){
+    try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; }
+  }
+
   function getPlayers(){
     removeDemoPlayers();
     seed();
-    try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; }
+    return _read();
   }
+
   function savePlayers(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+
   function getPlayer(id){ return getPlayers().find(p => p.id === id) || null; }
+
   function generateId(name){
     const slug = (name||"").toLowerCase().trim()
       .replace(/[àáâä]/g,"a").replace(/[èéêë]/g,"e").replace(/[ìíîï]/g,"i")
@@ -48,22 +59,53 @@
     while(all.some(p=>p.id===id)){ id = slug+"-"+(++n); }
     return id;
   }
+
   function nextNum(){
     const all = getPlayers();
     const max = all.reduce((m,p)=>Math.max(m, parseInt(p.num)||0), 0);
     return String(max+1).padStart(3,"0");
   }
+
+  // ── Write-through: localStorage first, then server ────────────────────────
   function savePlayer(p){
     const all = getPlayers();
     const idx = all.findIndex(x => x.id === p.id);
     if(idx >= 0) all[idx] = p; else { if(!p.num) p.num = nextNum(); all.push(p); }
     savePlayers(all);
+    fetch("/api/players", { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
+      .catch(()=>{});
     return p;
   }
+
   function deletePlayer(id){
     const all = getPlayers().filter(p => p.id !== id);
     savePlayers(all);
+    fetch("/api/players/"+id, { method:"DELETE", headers:API_HEADERS })
+      .catch(()=>{});
   }
+
+  // ── Server → localStorage sync ────────────────────────────────────────────
+  // Called once per page load. Fires 'dmscout:synced' when done.
+  // Pages listen to this event and re-render if data changed.
+  function _syncFromServer(){
+    fetch("/api/players")
+      .then(r => r.ok ? r.json() : null)
+      .then(players => {
+        if(!Array.isArray(players)) return;
+        const before = localStorage.getItem(KEY);
+        const after = JSON.stringify(players);
+        savePlayers(players);
+        if(before !== after){
+          document.dispatchEvent(new CustomEvent("dmscout:synced"));
+        }
+      })
+      .catch(()=>{});
+  }
+
+  // Deferred so page renders from localStorage first, then updates from server
+  setTimeout(_syncFromServer, 0);
+
+  // ── Export / Import ───────────────────────────────────────────────────────
   function exportJSON(){
     const blob = new Blob([JSON.stringify(getPlayers(),null,2)], {type:"application/json"});
     const url = URL.createObjectURL(blob);
@@ -71,6 +113,7 @@
     a.href = url; a.download = "dmscout-players-"+new Date().toISOString().slice(0,10)+".json";
     a.click(); URL.revokeObjectURL(url);
   }
+
   function normalize(p){
     p = Object.assign({}, p);
     if(!p.id) p.id = generateId(p.name||"player");
@@ -79,13 +122,13 @@
     p.position_main = p.position_main || p.position || "—";
     return p;
   }
+
   function importJSON(file){
     return new Promise((res,rej)=>{
       const reader = new FileReader();
       reader.onload = e => {
         try{
           let data = JSON.parse(e.target.result);
-          // Accept array, {players:[]}, {data:[]}
           if(!Array.isArray(data)){
             if(Array.isArray(data.players)) data = data.players;
             else if(Array.isArray(data.data)) data = data.data;
@@ -99,7 +142,10 @@
             if(i>=0) all[i]=p; else { if(!p.num) p.num = String(all.length+count+1).padStart(3,"0"); all.push(p); }
             count++;
           });
-          savePlayers(all); res(count);
+          savePlayers(all);
+          // Sync each imported player to server
+          all.forEach(p => fetch("/api/players", { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) }).catch(()=>{}));
+          res(count);
         }catch(err){ rej(err); }
       };
       reader.onerror = () => rej(new Error("lettura file fallita"));
@@ -107,7 +153,7 @@
     });
   }
 
-  // Auth
+  // ── Auth ──────────────────────────────────────────────────────────────────
   function isAuthed(){ return sessionStorage.getItem(AUTH_KEY) === "1"; }
   function tryLogin(pwd){
     if(pwd === PASSWORD){ sessionStorage.setItem(AUTH_KEY,"1"); return true; }
@@ -152,5 +198,10 @@
       else { alert("Password errata."); res(false); }
     });
   }
-  window.Storage = { getPlayers, getPlayer, savePlayer, deletePlayer, generateId, nextNum, exportJSON, importJSON, isAuthed, tryLogin, logout, requireAuth, verifyPassword, promptPassword };
+
+  window.Storage = {
+    getPlayers, getPlayer, savePlayer, deletePlayer,
+    generateId, nextNum, exportJSON, importJSON,
+    isAuthed, tryLogin, logout, requireAuth, verifyPassword, promptPassword
+  };
 })();

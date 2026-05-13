@@ -4,4 +4,11 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "dmscout-players",
+      "database_id": "0e60ac15-7e6e-44ac-a6c5-13d929e94e90"
+    }
+  ]
 }

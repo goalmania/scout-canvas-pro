@@ -58,9 +58,10 @@
 </div></section>
 
 <script>
-const all = Storage.getPlayers();
-document.getElementById("stats").textContent =
-  `${all.length} GIOCATORI · ${new Set(all.map(p=>p.nationality||"?")).size} NAZIONI · ${new Set(all.filter(p=>p.region&&p.region!=="Estero").map(p=>p.region)).size} REGIONI ITALIA`;
+let all = Storage.getPlayers();
+function updateStats(){ document.getElementById("stats").textContent =
+  `${all.length} GIOCATORI · ${new Set(all.map(p=>p.nationality||"?")).size} NAZIONI · ${new Set(all.filter(p=>p.region&&p.region!=="Estero").map(p=>p.region)).size} REGIONI ITALIA`; }
+updateStats();
 
 // Leaflet map with dark tiles
 const map = L.map("map",{worldCopyJump:true,minZoom:2,maxZoom:18,zoomControl:true}).setView([42.5,12.5],5);
@@ -225,5 +226,11 @@ window.showRegion = showRegion;
 window.filteredAll = ()=>{ const v=document.getElementById("fVerd").value; return all.filter(p=>!v||p.verdict_type===v); };
 
 render();
+
+document.addEventListener("dmscout:synced", ()=>{
+  all = Storage.getPlayers();
+  updateStats();
+  render();
+});
 </script>
 </body></html>

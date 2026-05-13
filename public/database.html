@@ -75,6 +75,12 @@ function render(){
 ["fSearch","fPos","fVerdict","fRegion","fSort"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 render();
 
+// Re-render when server sync brings new data
+document.addEventListener("dmscout:synced", ()=>{
+  players.splice(0, players.length, ...Storage.getPlayers());
+  render();
+});
+
 document.getElementById("imp").onchange = async (e) => {
   const f = e.target.files[0];
   if(!f) return;
