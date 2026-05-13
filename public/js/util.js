@@ -185,14 +185,15 @@ window.U = (function(){
   function playerDetailHtml(p){
     const skillLabels = {ball_control:"Ball Control",passing:"Passaggio",dribbling:"Dribbling",finishing:"Finalizzazione",defensive_work:"Difensiva",tactical_iq:"Tattica IQ",decision_making:"Decision",aerial:"Aerei",pace:"Velocità",stamina:"Resistenza"};
     const r = p.ratings || {};
-    const canEdit = window.Storage && Storage.isAuthed();
+    const T = (k,fb)=> (window.I18N?I18N.t(k):fb)||fb;
     return `
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;align-items:end;margin-bottom:1.2rem">
-      <div class="label">// REPORT #${p.num||""}</div>
+      <div class="label">${T("modal.report","// REPORT")} #${p.num||""}</div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn btn-outline btn-sm" onclick="localStorage.setItem('dmscout_compare_id','${p.id}');location.href='/compare.html'">⇄ Compare</button>
-        ${canEdit?`<a href="/edit-report.html?id=${p.id}" class="btn btn-outline btn-sm">✏ Edit</a>`:''}
-        <a href="/player.html?id=${p.id}" class="btn btn-outline btn-sm" target="_blank">⤓ PDF</a>
+        <button class="btn btn-outline btn-sm" onclick="localStorage.setItem('dmscout_compare_id','${p.id}');location.href='/compare.html'">${T("btn.compare","⇄ Confronta")}</button>
+        <button class="btn btn-outline btn-sm" onclick="U.editPlayer('${p.id}')">${T("btn.edit","✏ Modifica")}</button>
+        <button class="btn btn-outline btn-sm" style="border-color:var(--red);color:var(--red)" onclick="U.deletePlayer('${p.id}')">${T("btn.delete","🗑 Elimina")}</button>
+        <a href="/player.html?id=${p.id}" class="btn btn-outline btn-sm" target="_blank">${T("btn.pdf","⤓ PDF")}</a>
       </div>
     </div>
 
