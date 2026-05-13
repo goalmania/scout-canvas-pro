@@ -2,15 +2,37 @@
 (function(){
   const KEY = "dmscout_players";
   const AUTH_KEY = "dmscout_auth";
+  const MIGRATION_KEY = "dmscout_migrated_v2";
   const PASSWORD = "paolodm2026"; // hardcoded password gate
+
+  // IDs of the old demo/seed players — remove them on first load after this update
+  const DEMO_IDS = [
+    "luca-mancini","matteo-russo","giuseppe-de-luca","andrea-bianchi",
+    "salvatore-greco","francesco-romano","davide-conti","alessandro-marino",
+    "nicola-ferrari","emanuele-vitale","marco-esposito","riccardo-galli"
+  ];
+
+  function removeDemoPlayers(){
+    if(localStorage.getItem(MIGRATION_KEY)) return;
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(raw){
+        const all = JSON.parse(raw) || [];
+        const cleaned = all.filter(p => !DEMO_IDS.includes(p.id));
+        localStorage.setItem(KEY, JSON.stringify(cleaned));
+      }
+    }catch(e){}
+    localStorage.setItem(MIGRATION_KEY, "1");
+  }
 
   function seed(){
     if(!localStorage.getItem(KEY)){
-      localStorage.setItem(KEY, JSON.stringify(window.SEED_PLAYERS || []));
+      localStorage.setItem(KEY, JSON.stringify([]));
     }
   }
 
   function getPlayers(){
+    removeDemoPlayers();
     seed();
     try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch(e){ return []; }
   }
