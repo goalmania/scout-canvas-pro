@@ -12,27 +12,28 @@
 <script src="/js/data.js"></script>
 <script src="/js/storage.js"></script>
 <script src="/js/util.js"></script>
+<script src="/js/i18n.js"></script>
 <script src="/js/nav.js"></script>
 <script>UI.renderNav({scout:true});</script>
 
 <section style="padding-top:5rem">
   <div class="container">
-    <div class="label"><span class="dot"></span> // DATABASE GIOCATORI</div>
+    <div class="label" data-i18n="lbl.reports"><span class="dot"></span> // DATABASE GIOCATORI</div>
     <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:1rem;margin-top:.6rem">
       <h1>Database<span class="accent">.</span></h1>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap">
-        <a href="/add-report.html" class="btn btn-primary">+ Nuovo Report</a>
-        <button class="btn btn-outline" onclick="Storage.exportJSON()">↓ Export JSON</button>
-        <label class="btn btn-outline" style="cursor:pointer">↑ Import JSON<input type="file" accept="application/json,.json" hidden id="imp"></label>
+        <a href="/add-report.html" class="btn btn-primary" data-i18n="btn.new">+ Nuovo Report</a>
+        <button class="btn btn-outline" onclick="Storage.exportJSON()" data-i18n="btn.export">↓ Export JSON</button>
+        <label class="btn btn-outline" style="cursor:pointer"><span data-i18n="btn.import">↑ Import JSON</span><input type="file" accept="application/json,.json" hidden id="imp"></label>
       </div>
     </div>
 
     <div class="filter-bar" style="margin-top:2rem">
-      <div class="field"><label>Cerca</label><input type="text" id="fSearch" placeholder="Nome, club, lega..."></div>
-      <div class="field"><label>Posizione</label><select id="fPos"><option value="">Tutte</option></select></div>
-      <div class="field"><label>Verdetto</label><select id="fVerdict"><option value="">Tutti</option><option value="buy">BUY</option><option value="monitor">MONITOR</option><option value="pass">PASS</option></select></div>
-      <div class="field"><label>Regione</label><select id="fRegion"><option value="">Tutte</option></select></div>
-      <div class="field"><label>Ordina per</label><select id="fSort">
+      <div class="field"><label data-i18n="lbl.search">Cerca</label><input type="text" id="fSearch" placeholder="Nome, club, lega..."></div>
+      <div class="field"><label data-i18n="lbl.position">Posizione</label><select id="fPos"><option value="">Tutte</option></select></div>
+      <div class="field"><label data-i18n="lbl.verdict">Verdetto</label><select id="fVerdict"><option value="">Tutti</option><option value="buy">BUY</option><option value="monitor">MONITOR</option><option value="pass">PASS</option></select></div>
+      <div class="field"><label data-i18n="lbl.region">Regione</label><select id="fRegion"><option value="">Tutte</option></select></div>
+      <div class="field"><label data-i18n="lbl.sort">Ordina per</label><select id="fSort">
         <option value="overall">Overall ↓</option><option value="date">Data ↓</option><option value="age">Età ↑</option><option value="name">Nome A-Z</option>
       </select></div>
     </div>
