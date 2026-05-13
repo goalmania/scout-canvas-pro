@@ -331,6 +331,21 @@ window.U = (function(){
     document.removeEventListener("keydown", escClose);
   }
 
+  async function editPlayer(id){
+    const ok = await Storage.promptPassword("Modifica report");
+    if(!ok) return;
+    location.href = "/edit-report.html?id="+id;
+  }
+  async function deletePlayer(id){
+    const ok = await Storage.promptPassword("Elimina report");
+    if(!ok) return;
+    const p = Storage.getPlayer(id);
+    if(!confirm("Eliminare definitivamente il report di "+(p?p.name:id)+" ?")) return;
+    Storage.deletePlayer(id);
+    closePlayerModal();
+    location.reload();
+  }
+
   return {POS_LABELS,POS_TO_CODE,ROLES_BY_POS,FORMATIONS,REGIONS,TAGS,
-    tagClass,verdictBadge,star,starsRow,fmtMoney,drawRadar,tags,downloadPDF,escapeHtml,playerCardHtml,playerDetailHtml,openPlayerModal,closePlayerModal};
+    tagClass,verdictBadge,star,starsRow,fmtMoney,drawRadar,tags,downloadPDF,escapeHtml,playerCardHtml,playerDetailHtml,openPlayerModal,closePlayerModal,editPlayer,deletePlayer};
 })();
