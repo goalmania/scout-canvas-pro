@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /portfolio.html
+Allow: /services.html
+Allow: /contact.html
+Allow: /css/
+Allow: /js/
+Allow: /assets/
+Allow: /llms.txt
+Disallow: /database.html
+Disallow: /add-report.html
+Disallow: /edit-report.html
+Disallow: /player.html
+Disallow: /map.html
+Disallow: /compare.html
+Disallow: /ai-report.html
+
+Sitemap: https://dimuropaolo.site/sitemap.xml
