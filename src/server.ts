@@ -73,6 +73,11 @@ export default {
   async fetch(request: Request, env: Env, ctx: unknown) {
     const url = new URL(request.url);
 
+    // Root redirect → portfolio
+    if (url.pathname === "/" || url.pathname === "") {
+      return Response.redirect(url.origin + "/portfolio.html", 301);
+    }
+
     // Players CRUD API — handled directly with D1, not through TanStack Start
     if (url.pathname.startsWith("/api/players")) {
       return handlePlayersApi(request, env);
