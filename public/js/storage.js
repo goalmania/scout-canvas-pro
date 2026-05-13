@@ -120,5 +120,15 @@
     pwd.onkeydown = e => { if(e.key==="Enter") go(); };
   }
 
-  window.Storage = { getPlayers, getPlayer, savePlayer, deletePlayer, generateId, nextNum, exportJSON, importJSON, isAuthed, tryLogin, logout, requireAuth };
+  function verifyPassword(pwd){ return pwd === PASSWORD; }
+  function promptPassword(action){
+    return new Promise(res=>{
+      if(isAuthed()){ res(true); return; }
+      const pwd = window.prompt((action||"Azione protetta")+" — inserisci la password:");
+      if(pwd==null){ res(false); return; }
+      if(verifyPassword(pwd)){ sessionStorage.setItem(AUTH_KEY,"1"); res(true); }
+      else { alert("Password errata."); res(false); }
+    });
+  }
+  window.Storage = { getPlayers, getPlayer, savePlayer, deletePlayer, generateId, nextNum, exportJSON, importJSON, isAuthed, tryLogin, logout, requireAuth, verifyPassword, promptPassword };
 })();
