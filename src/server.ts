@@ -73,6 +73,13 @@ export default {
   async fetch(request: Request, env: Env, ctx: unknown) {
     const url = new URL(request.url);
 
+    // www → non-www canonical redirect
+    if (url.hostname === "www.dimuropaolo.site") {
+      const canonical = new URL(request.url);
+      canonical.hostname = "dimuropaolo.site";
+      return Response.redirect(canonical.toString(), 301);
+    }
+
     // Root redirect → portfolio
     if (url.pathname === "/" || url.pathname === "") {
       return Response.redirect(url.origin + "/portfolio.html", 301);

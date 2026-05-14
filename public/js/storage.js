@@ -14,6 +14,15 @@
 
   const API_HEADERS = { "Content-Type": "application/json", "x-dmscout-key": PASSWORD };
 
+  // Resolve API base: relative when the Worker serves the site directly (workers.dev),
+  // absolute when the site is served by Cloudflare Pages (custom domain via CNAME).
+  const WORKER_ORIGIN = "https://dimuropaolo.dimuropaolo7.workers.dev";
+  function apiUrl(path){
+    const h = typeof location !== "undefined" ? location.hostname : "";
+    if(h === "dimuropaolo.dimuropaolo7.workers.dev" || h === "dimuropaolo.site") return path;
+    return WORKER_ORIGIN + path;
+  }
+
   // ── Migration ─────────────────────────────────────────────────────────────
   function removeDemoPlayers(){
     if(localStorage.getItem(MIGRATION_KEY)) return;
@@ -72,7 +81,7 @@
     const idx = all.findIndex(x => x.id === p.id);
     if(idx >= 0) all[idx] = p; else { if(!p.num) p.num = nextNum(); all.push(p); }
     savePlayers(all);
-    fetch("/api/players", { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
+    fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
       .catch(()=>{});
     return p;
   }
@@ -80,7 +89,7 @@
   function deletePlayer(id){
     const all = getPlayers().filter(p => p.id !== id);
     savePlayers(all);
-    fetch("/api/players/"+id, { method:"DELETE", headers:API_HEADERS })
+    fetch(apiUrl("/api/players/"+id), { method:"DELETE", headers:API_HEADERS })
       .catch(()=>{});
   }
 
@@ -88,7 +97,7 @@
   // Called once per page load. Fires 'dmscout:synced' when done.
   // Pages listen to this event and re-render if data changed.
   function _syncFromServer(){
-    fetch("/api/players")
+    fetch(apiUrl("/api/players"))
       .then(r => r.ok ? r.json() : null)
       .then(players => {
         if(!Array.isArray(players)) return;
@@ -144,7 +153,7 @@
           });
           savePlayers(all);
           // Sync each imported player to server
-          all.forEach(p => fetch("/api/players", { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) }).catch(()=>{}));
+          all.forEach(p => fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) }).catch(()=>{}));
           res(count);
         }catch(err){ rej(err); }
       };
