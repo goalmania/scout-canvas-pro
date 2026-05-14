@@ -94,16 +94,29 @@
   }
 
   // ── Server → localStorage sync ────────────────────────────────────────────
-  // Called once per page load. Fires 'dmscout:synced' when done.
-  // Pages listen to this event and re-render if data changed.
+  // Merge strategy: server is authoritative, but local-only players (not yet
+  // uploaded or present only in localStorage) are pushed up to the server.
+  // This prevents an empty D1 database from wiping existing local data.
   function _syncFromServer(){
     fetch(apiUrl("/api/players"))
       .then(r => r.ok ? r.json() : null)
-      .then(players => {
-        if(!Array.isArray(players)) return;
+      .then(serverPlayers => {
+        if(!Array.isArray(serverPlayers)) return;
+        const local = _read();
+        const serverIds = new Set(serverPlayers.map(p => p.id));
+
+        // Players that exist locally but not on server → push them up
+        const localOnly = local.filter(p => !serverIds.has(p.id));
+        localOnly.forEach(p => {
+          fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
+            .catch(()=>{});
+        });
+
+        // Merged list: server data wins for shared IDs, local-only appended
+        const merged = [...serverPlayers, ...localOnly];
         const before = localStorage.getItem(KEY);
-        const after = JSON.stringify(players);
-        savePlayers(players);
+        const after = JSON.stringify(merged);
+        savePlayers(merged);
         if(before !== after){
           document.dispatchEvent(new CustomEvent("dmscout:synced"));
         }
