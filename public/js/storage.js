@@ -37,6 +37,26 @@
     localStorage.setItem(MIGRATION_KEY, "1");
   }
 
+  // ── Deduplicazione locale ─────────────────────────────────────────────────
+  // Rimuove doppioni dal localStorage al caricamento (stessa logica: nome+birth_year)
+  function deduplicateLocal(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return;
+      const all = JSON.parse(raw) || [];
+      const seen = new Map();
+      const deduped = all.filter(p => {
+        const key = `${(p.name||"").trim().toLowerCase()}|${p.birth_year??""}`;
+        if(seen.has(key)) return false;
+        seen.set(key, true);
+        return true;
+      });
+      if(deduped.length !== all.length){
+        localStorage.setItem(KEY, JSON.stringify(deduped));
+      }
+    }catch(e){}
+  }
+
   // ── localStorage helpers ───────────────────────────────────────────────────
   function seed(){
     if(!localStorage.getItem(KEY)){
@@ -50,6 +70,7 @@
 
   function getPlayers(){
     removeDemoPlayers();
+    deduplicateLocal();
     seed();
     return _read();
   }
