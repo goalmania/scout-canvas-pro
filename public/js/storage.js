@@ -106,7 +106,15 @@
         const serverIds = new Set(serverPlayers.map(p => p.id));
 
         // Players that exist locally but not on server → push them up
-        const localOnly = local.filter(p => !serverIds.has(p.id));
+        // Usa nome (case-insensitive) + birth_year come fallback oltre all'id
+        const serverKeys = new Set(serverPlayers.map(p =>
+          `${(p.name||"").trim().toLowerCase()}|${p.birth_year??""}`
+        ));
+        const localOnly = local.filter(p => {
+          if(serverIds.has(p.id)) return false;
+          const key = `${(p.name||"").trim().toLowerCase()}|${p.birth_year??""}`;
+          return !serverKeys.has(key);
+        });
         localOnly.forEach(p => {
           fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
             .catch(()=>{});
@@ -160,7 +168,12 @@
           let count = 0;
           data.forEach(raw=>{
             const p = normalize(raw);
-            const i = all.findIndex(x=>x.id===p.id);
+            // Confronta per id, poi per nome (case-insensitive) + birth_year
+            let i = all.findIndex(x=>x.id===p.id);
+            if(i<0){
+              const key = `${(p.name||"").trim().toLowerCase()}|${p.birth_year??""}`;
+              i = all.findIndex(x=>`${(x.name||"").trim().toLowerCase()}|${x.birth_year??""}`===key);
+            }
             if(i>=0) all[i]=p; else { if(!p.num) p.num = String(all.length+count+1).padStart(3,"0"); all.push(p); }
             count++;
           });
