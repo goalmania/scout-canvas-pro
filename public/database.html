@@ -26,6 +26,7 @@
       <div style="display:flex;gap:.6rem;flex-wrap:wrap">
         <a href="/add-report.html" class="btn btn-primary" data-i18n="btn.new">+ Nuovo Report</a>
         <button class="btn btn-outline" onclick="Storage.exportJSON()" data-i18n="btn.export">↓ Export JSON</button>
+        <button class="btn btn-outline" style="border-color:#e55;color:#e55" onclick="(function(){var KEY='dmscout_players';var all=JSON.parse(localStorage.getItem(KEY)||'[]');var seen={};var deduped=all.filter(function(p){var key=(p.name||'').trim().toLowerCase()+'|'+(p.birth_year!=null?p.birth_year:'');if(seen[key])return false;seen[key]=true;return true;});var removed=all.length-deduped.length;if(removed===0){alert('Nessun doppione trovato.');return;}localStorage.setItem(KEY,JSON.stringify(deduped));alert('Rimossi '+removed+' doppioni!');location.reload();})()">🧹 Rimuovi Doppioni</button>
         <label class="btn btn-outline" style="cursor:pointer"><span data-i18n="btn.import">↑ Import JSON</span><input type="file" accept="application/json,.json" hidden id="imp"></label>
       </div>
     </div>
