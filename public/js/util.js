@@ -341,7 +341,7 @@ window.U = (function(){
     if(!ok) return;
     const p = Storage.getPlayer(id);
     if(!confirm("Eliminare definitivamente il report di "+(p?p.name:id)+" ?")) return;
-    Storage.deletePlayer(id);
+    await Storage.deletePlayer(id);  // aspetta che il DELETE al server sia completato
     closePlayerModal();
     location.reload();
   }

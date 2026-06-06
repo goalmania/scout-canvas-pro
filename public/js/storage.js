@@ -107,11 +107,12 @@
     return p;
   }
 
-  function deletePlayer(id){
+  async function deletePlayer(id){
     const all = getPlayers().filter(p => p.id !== id);
     savePlayers(all);
-    fetch(apiUrl("/api/players/"+id), { method:"DELETE", headers:API_HEADERS })
-      .catch(()=>{});
+    try{
+      await fetch(apiUrl("/api/players/"+id), { method:"DELETE", headers:API_HEADERS });
+    }catch(e){}
   }
 
   // ── Server → localStorage sync ────────────────────────────────────────────
