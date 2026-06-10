@@ -184,6 +184,7 @@
           if(!Array.isArray(data)){
             if(Array.isArray(data.players)) data = data.players;
             else if(Array.isArray(data.data)) data = data.data;
+            else if(data && typeof data === "object" && (data.id || data.name)) data = [data];
             else throw new Error("Formato JSON non riconosciuto (atteso array di report)");
           }
           const all = getPlayers();
