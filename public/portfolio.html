@@ -365,7 +365,7 @@ footer a:hover{color:var(--lime)}
           <circle cx="50" cy="50" r="5.5" fill="#c8f000"><animate attributeName="r" values="5.5;7.5;5.5" dur="2.4s" repeatCount="indefinite"/></circle>
         </svg>
         <h3>Paolo Di Muro</h3>
-        <div class="sub">Scout · Analista · Canosa di Puglia (BT)</div>
+        <div class="sub">Scout · Analista · Italia ed estero</div>
         <div class="attrs">
           <div class="attr"><div class="v"><span data-count-live>40</span>+</div><div class="k">Report scritti</div></div>
           <div class="attr"><div class="v">29<span style="font-size:.6em;color:var(--gray)">/30</span></div><div class="k">Media esami</div></div>
@@ -390,8 +390,8 @@ footer a:hover{color:var(--lime)}
 <section id="valore">
   <div class="wrap">
     <div class="kicker rv">Cosa porto a un'agenzia</div>
-    <h2 class="rv d1">Occhio, dati<br>e <em>rete al Sud.</em></h2>
-    <p class="lead rv d2">Un'agenzia piccola o media di solito paga persone diverse per osservare, schedare, comunicare e seguire il territorio. Io faccio queste cose già, ogni settimana, con strumenti miei.</p>
+    <h2 class="rv d1">Occhio, dati<br>e <em>metodo.</em></h2>
+    <p class="lead rv d2">Un'agenzia piccola o media di solito paga persone diverse per osservare, schedare, comunicare e seguire i giocatori nel tempo. Io faccio queste cose già, ogni settimana, con strumenti miei.</p>
 
     <div class="stats">
       <div class="stat glass rv"><div class="v"><span data-count-live>40</span><small>+</small></div><div class="k">report completi nel database DM Scout</div></div>
@@ -408,9 +408,9 @@ footer a:hover{color:var(--lime)}
         <div class="big">01</div>
       </div>
       <div class="tile glass hover w3 rv d1">
-        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
-        <h3>Presenza in Puglia</h3>
-        <p>Seguo Serie D, Eccellenza e giovanili pugliesi: nel database ci sono giocatori di Canosa, Bisceglie, Martina, Nardò e Lucera. Con Start Group ho individuato giocatori, li ho contattati io e ho girato i profili all'agenzia.</p>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l6-6 4 4 6-10"/><path d="M15 8h5v5"/></svg></div>
+        <h3>Dalla D al professionismo</h3>
+        <p>Almamy Soumah l'ho schedato quando giocava in Serie D: oggi è al Como. Osservo dai dilettanti ai campionati esteri, con giocatori di 25 nazionalità nel database. Con Start Group ho individuato giocatori, li ho contattati io e ho girato i profili all'agenzia.</p>
         <div class="big">02</div>
       </div>
       <div class="tile glass hover w2 rv">
@@ -531,8 +531,8 @@ footer a:hover{color:var(--lime)}
 <section id="report">
   <div class="wrap">
     <div class="kicker rv">Lavoro di scouting</div>
-    <h2 class="rv d1">I report<br><em>con il voto più alto.</em></h2>
-    <p class="lead rv d2">Tre schede dal database, caricate in tempo reale. Ognuna si apre in versione completa ed esportabile in PDF.</p>
+    <h2 class="rv d1">Report<br><em>in evidenza.</em></h2>
+    <p class="lead rv d2">Tre schede dal database, caricate in tempo reale: prima chi ho visto in Serie D ed è arrivato in alto, poi i voti più alti. Ognuna si apre in versione completa ed esportabile in PDF.</p>
     <div class="reports" id="reports">
       <div class="glass skeleton"></div><div class="glass skeleton"></div><div class="glass skeleton"></div>
     </div>
@@ -569,7 +569,7 @@ footer a:hover{color:var(--lime)}
         <span class="go">clubis.it ↗</span>
       </a>
       <a href="https://instagram.com/goalmania.it" target="_blank" rel="noopener" class="ven glass hover red rv d3">
-        <img src="/assets/logo-goalmania.png" alt="" loading="lazy">
+        <img src="/assets/logo-goalmania-2026.png" alt="" loading="lazy">
         <h4>Goalmania</h4>
         <p>Pagina Instagram di calcio: 21.600 follower e 16 milioni di interazioni al mese, cresciuta senza sponsorizzate.</p>
         <span class="go">@goalmania.it ↗</span>
@@ -689,7 +689,8 @@ footer a:hover{color:var(--lime)}
     setCounts('[data-count-live]', Math.floor(all.length/5)*5);
     var flags = {}; all.forEach(function(p){ if(p.flag) flags[p.flag] = 1; });
     var nf = Object.keys(flags).length; if(nf) setCounts('[data-count-nations]', nf);
-    var top = all.slice().sort(function(a,b){ return ((b.ratings||{}).overall||0) - ((a.ratings||{}).overall||0); }).slice(0,3);
+    var star = function(p){ return (p.tags||[]).indexOf('SCOPERTO IN D') >= 0 ? 1 : 0; };
+    var top = all.slice().sort(function(a,b){ return (star(b)-star(a)) || (((b.ratings||{}).overall||0) - ((a.ratings||{}).overall||0)); }).slice(0,3);
     box.innerHTML = top.map(function(p, k){
       var ov = (p.ratings||{}).overall || 0;
       var chips = [p.position_main, p.age ? p.age+' anni' : '', p.league].filter(Boolean).map(function(c){ return '<span class="chip">'+esc(String(c).trim())+'</span>'; }).join('');
