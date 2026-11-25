@@ -1,0 +1,12 @@
+{
+  // Deploy from repo root: npx wrangler deploy -c worker-api/wrangler.jsonc
+  // Secrets (not in git): ADMIN_PASSWORD, SESSION_SECRET
+  "name": "dimuropaolo",
+  "main": "index.js",
+  "compatibility_date": "2025-09-24",
+  "workers_dev": true,
+  "assets": { "directory": "../public", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "dmscout-players", "database_id": "0e60ac15-7e6e-44ac-a6c5-13d929e94e90" }
+  ]
+}

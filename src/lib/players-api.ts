@@ -1,4 +1,5 @@
-const API_KEY = "paolodm2026";
+// Superseded by worker-api/index.js (session login). The old shared key was public and is no longer accepted.
+const API_KEY = "";
 
 interface Env {
   DB: D1Database;
@@ -27,7 +28,7 @@ function corsHeaders(origin?: string | null): Record<string, string> {
 }
 
 function authed(request: Request): boolean {
-  return request.headers.get("x-dmscout-key") === API_KEY;
+  return API_KEY !== "" && request.headers.get("x-dmscout-key") === API_KEY;
 }
 
 export async function handlePlayersApi(request: Request, env: Env): Promise<Response> {

@@ -3,7 +3,7 @@
   const KEY = "dmscout_players";
   const AUTH_KEY = "dmscout_auth";
   const MIGRATION_KEY = "dmscout_migrated_v2";
-  const PASSWORD = "paolodm2026";
+  const TOKEN_KEY = "dmscout_token";
 
   // IDs of old demo/seed players — purged on first load after deploy
   const DEMO_IDS = [
@@ -12,7 +12,17 @@
     "nicola-ferrari","emanuele-vitale","marco-esposito","riccardo-galli"
   ];
 
-  const API_HEADERS = { "Content-Type": "application/json", "x-dmscout-key": PASSWORD };
+  // Writes carry the session token from /api/login; the password is checked only on the server.
+  function authHeaders(){
+    const h = { "Content-Type": "application/json" };
+    const t = sessionStorage.getItem(TOKEN_KEY);
+    if(t) h.Authorization = "Bearer " + t;
+    return h;
+  }
+  function checkWrite(r){
+    if(r && r.status === 401){ logout(); alert("Sessione scaduta: rientra con la password e salva di nuovo."); }
+    return r;
+  }
 
   // Resolve API base: relative when the Worker serves the site directly (workers.dev),
   // absolute when the site is served by Cloudflare Pages (custom domain via CNAME).
@@ -102,8 +112,8 @@
     const idx = all.findIndex(x => x.id === p.id);
     if(idx >= 0) all[idx] = p; else { if(!p.num) p.num = nextNum(); all.push(p); }
     savePlayers(all);
-    fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
-      .catch(()=>{});
+    fetch(apiUrl("/api/players"), { method:"POST", headers:authHeaders(), body:JSON.stringify(p) })
+      .then(checkWrite).catch(()=>{});
     return p;
   }
 
@@ -111,7 +121,7 @@
     const all = getPlayers().filter(p => p.id !== id);
     savePlayers(all);
     try{
-      await fetch(apiUrl("/api/players/"+id), { method:"DELETE", headers:API_HEADERS });
+      checkWrite(await fetch(apiUrl("/api/players/"+encodeURIComponent(id)), { method:"DELETE", headers:authHeaders() }));
     }catch(e){}
   }
 
@@ -138,7 +148,7 @@
           return !serverKeys.has(key);
         });
         localOnly.forEach(p => {
-          fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) })
+          fetch(apiUrl("/api/players"), { method:"POST", headers:authHeaders(), body:JSON.stringify(p) })
             .catch(()=>{});
         });
 
@@ -202,7 +212,7 @@
           });
           savePlayers(all);
           // Sync each imported player to server
-          all.forEach(p => fetch(apiUrl("/api/players"), { method:"POST", headers:API_HEADERS, body:JSON.stringify(p) }).catch(()=>{}));
+          all.forEach(p => fetch(apiUrl("/api/players"), { method:"POST", headers:authHeaders(), body:JSON.stringify(p) }).catch(()=>{}));
           res(count);
         }catch(err){ rej(err); }
       };
@@ -212,12 +222,27 @@
   }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
-  function isAuthed(){ return sessionStorage.getItem(AUTH_KEY) === "1"; }
-  function tryLogin(pwd){
-    if(pwd === PASSWORD){ sessionStorage.setItem(AUTH_KEY,"1"); return true; }
-    return false;
+  function isAuthed(){
+    const t = sessionStorage.getItem(TOKEN_KEY);
+    if(!t) return false;
+    try{
+      const b = t.split(".")[0].replace(/-/g,"+").replace(/_/g,"/");
+      return JSON.parse(atob(b)).exp > Date.now()/1000;
+    }catch(e){ return false; }
   }
-  function logout(){ sessionStorage.removeItem(AUTH_KEY); }
+  // Resolves to "ok", "wrong", "blocked" or "error".
+  async function tryLogin(pwd){
+    try{
+      const r = await fetch(apiUrl("/api/login"), { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ password: pwd }) });
+      if(r.status === 429) return "blocked";
+      if(!r.ok) return r.status === 401 ? "wrong" : "error";
+      const d = await r.json();
+      sessionStorage.setItem(TOKEN_KEY, d.token); sessionStorage.setItem(AUTH_KEY, "1");
+      return "ok";
+    }catch(e){ return "error"; }
+  }
+  const LOGIN_MSG = { wrong:"Password errata.", blocked:"Troppi tentativi: riprova tra 15 minuti.", error:"Server non raggiungibile, riprova." };
+  function logout(){ sessionStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(AUTH_KEY); }
 
   function requireAuth(){
     if(isAuthed()) return;
@@ -238,23 +263,25 @@
     const pwd = overlay.querySelector("#lockPwd");
     const btn = overlay.querySelector("#lockBtn");
     const err = overlay.querySelector("#lockErr");
-    function go(){
-      if(tryLogin(pwd.value)){ overlay.remove(); document.body.style.overflow=""; }
-      else { err.style.display="block"; pwd.value=""; pwd.focus(); }
+    async function go(){
+      btn.disabled = true;
+      const res = await tryLogin(pwd.value);
+      btn.disabled = false;
+      if(res === "ok"){ location.reload(); return; }
+      err.textContent = LOGIN_MSG[res]; err.style.display="block"; pwd.value=""; pwd.focus();
     }
     btn.onclick = go;
     pwd.onkeydown = e => { if(e.key==="Enter") go(); };
   }
 
-  function verifyPassword(pwd){ return pwd === PASSWORD; }
-  function promptPassword(action){
-    return new Promise(res=>{
-      if(isAuthed()){ res(true); return; }
-      const pwd = window.prompt((action||"Azione protetta")+" — inserisci la password:");
-      if(pwd==null){ res(false); return; }
-      if(verifyPassword(pwd)){ sessionStorage.setItem(AUTH_KEY,"1"); res(true); }
-      else { alert("Password errata."); res(false); }
-    });
+  async function verifyPassword(pwd){ return (await tryLogin(pwd)) === "ok"; }
+  async function promptPassword(action){
+    if(isAuthed()) return true;
+    const pwd = window.prompt((action||"Azione protetta")+" — inserisci la password:");
+    if(pwd==null) return false;
+    const res = await tryLogin(pwd);
+    if(res !== "ok"){ alert(LOGIN_MSG[res]); return false; }
+    return true;
   }
 
   window.Storage = {
