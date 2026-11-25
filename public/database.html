@@ -2,7 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
 <title>Database — DM Scout</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://dimuropaolo.site/portfolio.html">
@@ -18,12 +19,15 @@
 <script src="/js/nav.js"></script>
 <script>UI.renderNav({scout:true});</script>
 
-<section style="padding-top:5rem">
+<section style="padding-top:3.5rem">
   <div class="container">
     <div class="label" data-i18n="lbl.reports"><span class="dot"></span> // DATABASE GIOCATORI</div>
     <div style="display:flex;justify-content:space-between;align-items:end;flex-wrap:wrap;gap:1rem;margin-top:.6rem">
-      <h1>Database<span class="accent">.</span></h1>
-      <div style="display:flex;gap:.6rem;flex-wrap:wrap">
+      <div>
+        <h1>I miei <em>report.</em></h1>
+        <p style="color:var(--gray);max-width:560px;margin-top:.8rem">Schede complete su giocatori dalla Serie D alla Bundesliga. Tocca una scheda per aprirla, filtra per ruolo o verdetto.</p>
+      </div>
+      <div class="gx-admin" id="adminBar" hidden>
         <a href="/add-report.html" class="btn btn-primary" data-i18n="btn.new">+ Nuovo Report</a>
         <button class="btn btn-outline" onclick="Storage.exportJSON()" data-i18n="btn.export">↓ Export JSON</button>
         <button class="btn btn-outline" style="border-color:#e55;color:#e55" onclick="(function(){var KEY='dmscout_players';var all=JSON.parse(localStorage.getItem(KEY)||'[]');var seen={};var deduped=all.filter(function(p){var key=(p.name||'').trim().toLowerCase()+'|'+(p.birth_year!=null?p.birth_year:'');if(seen[key])return false;seen[key]=true;return true;});var removed=all.length-deduped.length;if(removed===0){alert('Nessun doppione trovato.');return;}localStorage.setItem(KEY,JSON.stringify(deduped));alert('Rimossi '+removed+' doppioni!');location.reload();})()">🧹 Rimuovi Doppioni</button>
@@ -47,6 +51,7 @@
 </section>
 
 <script>
+if(Storage.isAuthed()) document.getElementById('adminBar').hidden = false;
 const players = Storage.getPlayers();
 const positions = [...new Set(players.map(p=>p.position_main))].sort();
 const regions = [...new Set(players.map(p=>p.region).filter(Boolean))].sort();

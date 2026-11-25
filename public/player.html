@@ -2,7 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
 <title>Player — DM Scout</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -55,7 +56,7 @@ function render(){
     </div>
 
     <!-- HEADER -->
-    <div class="card-flat" style="display:grid;grid-template-columns:auto 1fr auto;gap:2rem;align-items:center;margin-bottom:1.5rem">
+    <div class="card-flat pd-head" style="display:grid;grid-template-columns:auto 1fr auto;gap:2rem;align-items:center;margin-bottom:1.5rem">
       ${p.photo ? `<img src="${p.photo}" class="photo-square" alt="${U.escapeHtml(p.name)}">` : `<div class="photo-square">${p.name.split(' ').map(s=>s[0]).join('').slice(0,2)}</div>`}
       <div>
         <div class="mono" style="color:var(--gray);font-size:.75rem;letter-spacing:2px">#${p.num} · ${p.flag||''} ${U.escapeHtml(p.nationality||'')}</div>
@@ -67,7 +68,7 @@ function render(){
         </div>
         <div style="color:var(--gray);font-size:.95rem;margin-top:.6rem">${U.escapeHtml(p.club)} · ${U.escapeHtml(p.league||'')}</div>
       </div>
-      <div style="text-align:right">
+      <div class="pd-ovr" style="text-align:right">
         <div class="stat-num" style="font-size:3.5rem;color:var(--accent)">${p.ratings.overall.toFixed(1)}</div>
         <div class="stat-lbl">Overall</div>
       </div>

@@ -191,13 +191,13 @@ window.U = (function(){
       <div class="label">${T("modal.report","// REPORT")} #${p.num||""}</div>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         <button class="btn btn-outline btn-sm" onclick="localStorage.setItem('dmscout_compare_id','${p.id}');location.href='/compare.html'">${T("btn.compare","⇄ Confronta")}</button>
-        <button class="btn btn-outline btn-sm" onclick="U.editPlayer('${p.id}')">${T("btn.edit","✏ Modifica")}</button>
-        <button class="btn btn-outline btn-sm" style="border-color:var(--red);color:var(--red)" onclick="U.deletePlayer('${p.id}')">${T("btn.delete","🗑 Elimina")}</button>
+        ${(window.Storage && Storage.isAuthed && Storage.isAuthed()) ? `<button class="btn btn-outline btn-sm" onclick="U.editPlayer('${p.id}')">${T("btn.edit","✏ Modifica")}</button>
+        <button class="btn btn-outline btn-sm" style="border-color:var(--red);color:var(--red)" onclick="U.deletePlayer('${p.id}')">${T("btn.delete","🗑 Elimina")}</button>` : ""}
         <a href="/player.html?id=${p.id}" class="btn btn-outline btn-sm" target="_blank">${T("btn.pdf","⤓ PDF")}</a>
       </div>
     </div>
 
-    <div class="card-flat" style="display:grid;grid-template-columns:auto 1fr auto;gap:1.5rem;align-items:center;margin-bottom:1.2rem">
+    <div class="card-flat pd-head" style="display:grid;grid-template-columns:auto 1fr auto;gap:1.5rem;align-items:center;margin-bottom:1.2rem">
       ${p.photo ? `<img src="${p.photo}" class="photo-square" alt="${escapeHtml(p.name)}">` : `<div class="photo-square">${(p.name||'?').split(' ').map(s=>s[0]).join('').slice(0,2)}</div>`}
       <div>
         <div class="mono" style="color:var(--gray);font-size:.75rem;letter-spacing:2px">${p.flag||''} ${escapeHtml(p.nationality||'')}</div>
@@ -209,7 +209,7 @@ window.U = (function(){
         </div>
         <div style="color:var(--gray);font-size:.95rem;margin-top:.6rem">${escapeHtml(p.club||'')} · ${escapeHtml(p.league||'')}</div>
       </div>
-      <div style="text-align:right">
+      <div class="pd-ovr" style="text-align:right">
         <div class="stat-num" style="font-size:3rem;color:var(--accent)">${(r.overall||0).toFixed(1)}</div>
         <div class="stat-lbl">Overall</div>
       </div>
